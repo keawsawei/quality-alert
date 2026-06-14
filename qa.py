@@ -6,7 +6,7 @@ import base64
 
 st.set_page_config(page_title="QUALITY ALERT", page_icon="🚨", layout="centered")
 
-APP_VERSION = "V10-APP-UI-MACHINE-CATEGORY"
+APP_VERSION = "V11-SIMPLE-CLEAN-APP"
 
 DATA_FILE = Path("quality_alert.xlsx")
 IMG_DIR = Path("images")
@@ -331,8 +331,8 @@ st.markdown(
 .app-frame {
     background: rgba(255, 255, 255, .78);
     border: 1px solid rgba(255,255,255,.95);
-    border-radius: 32px;
-    padding: 16px;
+    border-radius: 24px;
+    padding: 14px;
     box-shadow: 0 28px 70px rgba(15, 23, 42, .14);
     backdrop-filter: blur(18px);
 }
@@ -341,14 +341,14 @@ st.markdown(
     display: flex;
     align-items: center;
     gap: 14px;
-    margin-bottom: 14px;
+    margin-bottom: 4px;
 }
 
 .logo {
     width: 68px;
     height: 68px;
     border-radius: 24px;
-    background: linear-gradient(145deg, #ff3154, #e11d48);
+    background: linear-gradient(145deg, #071f52, #123a7a);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -366,7 +366,7 @@ st.markdown(
 }
 
 .brand-title span {
-    color: #ff2f4d;
+    color: #e11d48;
 }
 
 .brand-sub {
@@ -376,39 +376,7 @@ st.markdown(
     color: #263b60;
 }
 
-.top-actions {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 9px;
-}
-
-.action {
-    background: linear-gradient(180deg, #ffffff, #f7fbff);
-    border: 1px solid #dbeafe;
-    border-radius: 19px;
-    text-align: center;
-    padding: 10px 5px;
-    box-shadow: 0 10px 22px rgba(15,23,42,.055);
-}
-
-.action-icon {
-    width: 42px;
-    height: 42px;
-    margin: 0 auto 6px auto;
-    border-radius: 999px;
-    background: #eff6ff;
-    border: 1px solid #bfdbfe;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 22px;
-}
-
-.action-text {
-    color: #0f172a;
-    font-size: 13px;
-    font-weight: 1000;
-}
+/* ขั้นตอนด้านบนตัดออกแล้ว */
 
 div[data-testid="stTabs"] [data-baseweb="tab-list"] {
     gap: 7px;
@@ -438,7 +406,7 @@ div[data-testid="stTabs"] button {
 }
 
 .phone-top {
-    background: linear-gradient(135deg, #ff2f4d, #d91f3d);
+    background: linear-gradient(135deg, #071f52, #123a7a);
     padding: 18px;
     color: white;
     display: flex;
@@ -836,12 +804,6 @@ st.markdown(
             <div class="brand-sub">ทุกคนคือ QA ป้องกันก่อนเสีย ส่งก่อนรอด</div>
         </div>
     </div>
-    <div class="top-actions">
-        <div class="action"><div class="action-icon">🏭</div><div class="action-text">เลือกเครื่อง</div></div>
-        <div class="action"><div class="action-icon">📂</div><div class="action-text">หมวดปัญหา</div></div>
-        <div class="action"><div class="action-icon">🔍</div><div class="action-text">อาการ</div></div>
-        <div class="action"><div class="action-icon">📨</div><div class="action-text">ส่งแจ้งเตือน</div></div>
-    </div>
     """,
     unsafe_allow_html=True,
 )
@@ -859,7 +821,7 @@ with tab_alert:
             <div class="phone-icon">🚨</div>
             <div>
                 <div class="phone-title">แจ้งเตือนปัญหาคุณภาพ</div>
-                <div class="phone-sub">เลือกเครื่อง → หมวดปัญหา → อาการ → ส่ง</div>
+                <div class="phone-sub">กรอกข้อมูลสั้น ๆ แล้วส่งแจ้งเตือน</div>
             </div>
         </div>
         """,
