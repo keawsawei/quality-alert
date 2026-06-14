@@ -6,7 +6,7 @@ import base64
 
 st.set_page_config(page_title="QUALITY ALERT", page_icon="🚨", layout="centered")
 
-APP_VERSION = "V11-SIMPLE-CLEAN-APP"
+APP_VERSION = "V12-SIMPLE-ALERT"
 
 DATA_FILE = Path("quality_alert.xlsx")
 IMG_DIR = Path("images")
@@ -25,90 +25,27 @@ MACHINES = [
     "BOBST",
 ]
 
-PROBLEM_CATEGORIES = [
-    "กระดาษ",
-    "การพิมพ์",
-    "Slot",
-    "Rotary-Diecut",
-    "คัด",
-    "กาว",
-    "ตอก",
+PROBLEMS = [
+    "พิมพ์เลื่อน",
+    "สีเพี้ยน",
+    "หมึกเปื้อน",
+    "Register ไม่ตรง",
+    "กาวไม่ติด",
+    "กาวล้น",
+    "ประกบเบี้ยว",
+    "ตอกหลุด",
+    "ตอกไม่ครบ",
+    "ตอกเบี้ยว",
+    "ล็อคไม่เข้า",
+    "บากแตก",
+    "Diecut ไม่ขาด",
+    "กระดาษยับ",
+    "กระดาษแตก",
+    "งานเปื้อน",
+    "งานขาด",
     "อื่นๆ",
 ]
 
-AREAS = [
-    "คัด",
-    "กาว",
-    "ตอก",
-    "ขึ้นรูป",
-    "อื่นๆ",
-]
-
-DEFECTS = {
-    "กระดาษ": [
-        "กระดาษยับ",
-        "กระดาษโก่ง",
-        "กระดาษชื้น",
-        "กระดาษแตก",
-        "กระดาษสีผิด",
-        "กระดาษขาด",
-        "อื่นๆ",
-    ],
-    "การพิมพ์": [
-        "พิมพ์เลื่อน",
-        "สีเพี้ยน",
-        "สีจาง",
-        "สีเข้ม",
-        "หมึกเปื้อน",
-        "Register ไม่ตรง",
-        "พิมพ์ไม่ครบ",
-        "อื่นๆ",
-    ],
-    "Slot": [
-        "Slot เบี้ยว",
-        "Slot ลึกเกิน",
-        "Slot ตื้นเกิน",
-        "Slot ขาด",
-        "Slot ไม่ตรงตำแหน่ง",
-        "อื่นๆ",
-    ],
-    "Rotary-Diecut": [
-        "Diecut ไม่ขาด",
-        "Diecut ขาดเกิน",
-        "บากแตก",
-        "บากเบี้ยว",
-        "ล็อคไม่เข้า",
-        "รอยกดไม่ชัด",
-        "อื่นๆ",
-    ],
-    "คัด": [
-        "งานเปื้อน",
-        "งานขาด",
-        "รอยขีดข่วน",
-        "พิมพ์เลื่อน",
-        "คัดปน",
-        "อื่นๆ",
-    ],
-    "กาว": [
-        "กาวไม่ติด",
-        "กาวล้น",
-        "กาวเปื้อน",
-        "ประกบเบี้ยว",
-        "กาวแห้ง",
-        "อื่นๆ",
-    ],
-    "ตอก": [
-        "ตอกหลุด",
-        "ตอกไม่ครบ",
-        "ตอกเบี้ยว",
-        "ตอกผิดตำแหน่ง",
-        "ตอกทะลุ",
-        "อื่นๆ",
-    ],
-    "อื่นๆ": ["อื่นๆ"],
-}
-
-IMPACT_LEVELS = ["คัด", "กาว", "ขึ้นรูป", "ลูกค้า"]
 SEVERITY_LIST = ["ต่ำ", "กลาง", "สูง"]
 COST_PER_SHEET = 2.5
 
@@ -127,16 +64,12 @@ def load_data():
         "เวลา": "",
         "ผู้แจ้ง": "",
         "เครื่อง": "",
-        "หมวดปัญหา": "",
-        "จุดที่พบ": "",
-        "หน่วยงาน": "",
+        "ปัญหาที่พบ": "",
         "อาการ": "",
         "จำนวน": 0,
-        "หลุดถึง": "",
         "ระดับ": "",
         "มูลค่าป้องกัน": 0,
         "รูปภาพ": "",
-        "รายละเอียด": "",
         "สถานะ": "Open",
     }
 
@@ -144,21 +77,20 @@ def load_data():
         if col not in df.columns:
             df[col] = default
 
-    # migrate old department data
-    if "หน่วยงาน" in df.columns:
-        df["จุดที่พบ"] = df["จุดที่พบ"].astype(str).replace("nan", "")
-        old_area_mask = df["จุดที่พบ"].astype(str).str.strip() == ""
-        df.loc[old_area_mask, "จุดที่พบ"] = df.loc[old_area_mask, "หน่วยงาน"]
+    # migrate old data
+    if "ปัญหาที่พบ" in df.columns and "อาการ" in df.columns:
+        mask = df["ปัญหาที่พบ"].astype(str).str.strip().isin(["", "nan", "None"])
+        df.loc[mask, "ปัญหาที่พบ"] = df.loc[mask, "อาการ"]
 
-    df["เครื่อง"] = df["เครื่อง"].astype(str).replace("nan", "").replace("", "ไม่ระบุ")
-    df["หมวดปัญหา"] = df["หมวดปัญหา"].astype(str).replace("nan", "").replace("", "อื่นๆ")
-    df["จุดที่พบ"] = df["จุดที่พบ"].astype(str).replace("nan", "").replace("", "อื่นๆ")
+    if "เครื่อง" in df.columns:
+        df["เครื่อง"] = df["เครื่อง"].astype(str).replace("nan", "").replace("", "ไม่ระบุ")
 
+    df["ปัญหาที่พบ"] = df["ปัญหาที่พบ"].astype(str).replace("nan", "").replace("", "ไม่ระบุ")
     df["จำนวน"] = pd.to_numeric(df["จำนวน"], errors="coerce").fillna(0).astype(int)
     df["มูลค่าป้องกัน"] = pd.to_numeric(df["มูลค่าป้องกัน"], errors="coerce").fillna(0)
 
-    mask = df["มูลค่าป้องกัน"] <= 0
-    df.loc[mask, "มูลค่าป้องกัน"] = df.loc[mask, "จำนวน"] * COST_PER_SHEET
+    mask_value = df["มูลค่าป้องกัน"] <= 0
+    df.loc[mask_value, "มูลค่าป้องกัน"] = df.loc[mask_value, "จำนวน"] * COST_PER_SHEET
 
     return df
 
@@ -187,35 +119,22 @@ def image_to_base64(path):
         return ""
 
 
-def severity_color(severity):
+def severity_style(severity):
     severity = str(severity).strip()
     if severity == "สูง":
-        return "#ff2f4d", "สูง"
+        return "#ef233c", "🔴"
     if severity == "กลาง":
-        return "#ffb020", "กลาง"
-    return "#20c767", "ต่ำ"
+        return "#f59e0b", "🟡"
+    return "#22c55e", "🟢"
 
 
-def category_icon(cat):
-    return {
-        "กระดาษ": "📄",
-        "การพิมพ์": "🎨",
-        "Slot": "✂️",
-        "Rotary-Diecut": "⚙️",
-        "คัด": "🔍",
-        "กาว": "🔥",
-        "ตอก": "🔨",
-        "อื่นๆ": "📌",
-    }.get(cat, "📌")
-
-
-def metric_card(title, value, icon, color):
+def metric_card(label, value, icon, color):
     st.markdown(
         f"""
         <div class="metric-card" style="--accent:{color};">
             <div class="metric-icon">{icon}</div>
             <div>
-                <div class="metric-title">{title}</div>
+                <div class="metric-label">{label}</div>
                 <div class="metric-value">{value}</div>
             </div>
         </div>
@@ -229,55 +148,45 @@ def latest_card(row):
     time = str(row.get("เวลา", ""))
     reporter = str(row.get("ผู้แจ้ง", ""))
     machine = str(row.get("เครื่อง", "ไม่ระบุ"))
-    category = str(row.get("หมวดปัญหา", "อื่นๆ"))
-    area = str(row.get("จุดที่พบ", "อื่นๆ"))
-    defect = str(row.get("อาการ", ""))
+    problem = str(row.get("ปัญหาที่พบ", row.get("อาการ", "")))
     qty = safe_int(row.get("จำนวน", 0))
-    impact = str(row.get("หลุดถึง", ""))
     severity = str(row.get("ระดับ", ""))
     value = safe_int(row.get("มูลค่าป้องกัน", 0))
     img_path = str(row.get("รูปภาพ", "")).strip()
 
-    color, sev_text = severity_color(severity)
+    color, icon = severity_style(severity)
     img64 = image_to_base64(img_path)
 
     if img64:
         img_html = f'<img class="thumb" src="data:image/jpeg;base64,{img64}" />'
     else:
-        img_html = f'<div class="thumb empty-thumb">{category_icon(category)}</div>'
+        img_html = f'<div class="thumb empty-thumb">{icon}</div>'
 
     st.markdown(
         f"""
-        <div class="list-card">
-            <div class="list-bar" style="background:{color};">{time[:5]}</div>
-            <div class="list-content">
-                <div class="list-top">
-                    <div>
-                        <div class="list-title">{defect}</div>
-                        <div class="list-sub">{machine} • {category_icon(category)} {category} • จุด {area}</div>
-                    </div>
-                    <div class="qty-badge">{qty:,} ใบ</div>
-                </div>
-                <div class="list-foot">👤 {reporter} • หลุดถึง {impact} • 💰 {value:,} บาท</div>
+        <div class="latest-card">
+            <div class="time-box" style="background:{color};">{time[:5]}</div>
+            <div class="latest-main">
+                <div class="latest-title">{icon} {problem}</div>
+                <div class="latest-sub">{machine} • {qty:,} ใบ</div>
+                <div class="latest-sub">👤 {reporter} • {date} • 💰 {value:,} บาท</div>
             </div>
             {img_html}
-            <div class="sev-chip" style="background:{color};">ระดับ {sev_text}</div>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
 
-def rank_card(rank, name, machine, qty, cases):
+def rank_card(rank, name, qty, cases):
     medal = "🥇" if rank == 1 else "🥈" if rank == 2 else "🥉" if rank == 3 else f"#{rank}"
     st.markdown(
         f"""
         <div class="rank-card">
             <div class="rank-medal">{medal}</div>
-            <div class="rank-avatar">👤</div>
             <div class="rank-info">
                 <div class="rank-name">{name}</div>
-                <div class="rank-sub">{machine} • {cases:,} เคส</div>
+                <div class="rank-sub">{cases:,} เคส</div>
             </div>
             <div class="rank-score">{qty:,}<span> ใบ</span></div>
         </div>
@@ -286,16 +195,16 @@ def rank_card(rank, name, machine, qty, cases):
     )
 
 
-def simple_rank(title, sub, score, color="#ff2f4d", no="1"):
+def problem_card(rank, problem, qty, cases):
     st.markdown(
         f"""
-        <div class="simple-rank">
-            <div class="simple-no" style="background:{color};">{no}</div>
+        <div class="problem-card">
+            <div class="problem-no">{rank}</div>
             <div>
-                <div class="simple-title">{title}</div>
-                <div class="simple-sub">{sub}</div>
+                <div class="problem-name">{problem}</div>
+                <div class="problem-sub">{cases:,} เคส</div>
             </div>
-            <div class="simple-score">{score}</div>
+            <div class="problem-score">{qty:,} ใบ</div>
         </div>
         """,
         unsafe_allow_html=True,
@@ -313,9 +222,9 @@ st.markdown(
 
 .stApp {
     background:
-        radial-gradient(circle at top left, rgba(29, 78, 216, .22), transparent 32%),
-        radial-gradient(circle at top right, rgba(255, 47, 77, .16), transparent 32%),
-        linear-gradient(180deg, #f4f8ff 0%, #edf5ff 54%, #ffffff 100%);
+        radial-gradient(circle at top left, rgba(15, 31, 82, .13), transparent 30%),
+        radial-gradient(circle at top right, rgba(239, 35, 60, .12), transparent 32%),
+        linear-gradient(180deg, #f7faff 0%, #edf4ff 50%, #ffffff 100%);
 }
 
 #MainMenu, footer, header {
@@ -323,72 +232,69 @@ st.markdown(
 }
 
 .block-container {
-    max-width: 760px;
+    max-width: 720px;
     padding-top: 1rem;
     padding-bottom: 2rem;
 }
 
-.app-frame {
-    background: rgba(255, 255, 255, .78);
-    border: 1px solid rgba(255,255,255,.95);
-    border-radius: 24px;
-    padding: 14px;
-    box-shadow: 0 28px 70px rgba(15, 23, 42, .14);
-    backdrop-filter: blur(18px);
+.app-header {
+    background: rgba(255,255,255,.88);
+    border: 1px solid #e5e7eb;
+    border-radius: 28px;
+    padding: 18px;
+    box-shadow: 0 18px 46px rgba(15, 23, 42, .09);
+    margin-bottom: 14px;
 }
 
-.hero {
+.brand {
     display: flex;
     align-items: center;
     gap: 14px;
-    margin-bottom: 4px;
 }
 
 .logo {
-    width: 68px;
-    height: 68px;
-    border-radius: 24px;
+    width: 66px;
+    height: 66px;
+    border-radius: 22px;
     background: linear-gradient(145deg, #071f52, #123a7a);
     display: flex;
     align-items: center;
     justify-content: center;
     color: white;
-    font-size: 38px;
-    box-shadow: inset 0 4px 0 rgba(255,255,255,.25), 0 18px 38px rgba(225, 29, 72, .30);
+    font-size: 36px;
+    box-shadow: 0 14px 32px rgba(7, 31, 82, .25);
 }
 
-.brand-title {
-    font-size: 41px;
+.title {
+    font-size: 40px;
     line-height: .92;
     font-weight: 1000;
     color: #071f52;
-    letter-spacing: -1.5px;
+    letter-spacing: -1.3px;
 }
 
-.brand-title span {
-    color: #e11d48;
+.title span {
+    color: #ef233c;
 }
 
-.brand-sub {
+.subtitle {
     margin-top: 6px;
+    color: #334155;
     font-size: 15px;
-    font-weight: 900;
-    color: #263b60;
+    font-weight: 850;
 }
-
-/* ขั้นตอนด้านบนตัดออกแล้ว */
 
 div[data-testid="stTabs"] [data-baseweb="tab-list"] {
-    gap: 7px;
-    margin-top: 14px;
+    gap: 8px;
+    margin-top: 10px;
 }
 
 div[data-testid="stTabs"] [data-baseweb="tab"] {
-    background: rgba(255,255,255,.86);
+    background: rgba(255,255,255,.90);
     border: 1px solid #dbeafe;
     border-radius: 999px;
-    padding: 8px 11px;
-    box-shadow: 0 8px 17px rgba(15,23,42,.05);
+    padding: 8px 12px;
+    box-shadow: 0 7px 16px rgba(15, 23, 42, .05);
 }
 
 div[data-testid="stTabs"] button {
@@ -396,45 +302,45 @@ div[data-testid="stTabs"] button {
     font-weight: 1000;
 }
 
-.form-phone {
+.form-card {
     background: #ffffff;
+    border: 1px solid #e5e7eb;
     border-radius: 30px;
     overflow: hidden;
+    box-shadow: 0 22px 55px rgba(15, 23, 42, .12);
     margin-top: 12px;
-    border: 1px solid #e5e7eb;
-    box-shadow: 0 24px 55px rgba(15,23,42,.13);
 }
 
-.phone-top {
+.form-top {
     background: linear-gradient(135deg, #071f52, #123a7a);
-    padding: 18px;
     color: white;
+    padding: 18px;
     display: flex;
-    gap: 12px;
     align-items: center;
+    gap: 12px;
 }
 
-.phone-icon {
+.form-icon {
     width: 48px;
     height: 48px;
-    border-radius: 17px;
-    background: rgba(255,255,255,.20);
+    border-radius: 16px;
+    background: rgba(255,255,255,.16);
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 28px;
 }
 
-.phone-title {
+.form-title {
     font-size: 24px;
     line-height: 1.1;
     font-weight: 1000;
 }
 
-.phone-sub {
+.form-sub {
     font-size: 13px;
     font-weight: 800;
-    opacity: .94;
+    opacity: .9;
 }
 
 .form-body {
@@ -448,12 +354,11 @@ label {
 
 .stTextInput input,
 .stNumberInput input,
-.stTextArea textarea,
 .stSelectbox div[data-baseweb="select"] > div {
     background: #f8fafc !important;
     border: 1px solid #dbeafe !important;
     border-radius: 16px !important;
-    min-height: 46px;
+    min-height: 48px;
 }
 
 .stRadio > div {
@@ -470,14 +375,14 @@ div[data-testid="stExpander"] {
 }
 
 .stFormSubmitButton > button {
-    background: linear-gradient(135deg, #ff3154, #dc2626 75%, #b91c1c) !important;
+    background: linear-gradient(135deg, #ef233c, #dc2626 75%, #b91c1c) !important;
     color: white !important;
-    height: 62px;
-    border-radius: 18px !important;
+    height: 64px;
+    border-radius: 19px !important;
     font-size: 22px !important;
     font-weight: 1000 !important;
     border: 0 !important;
-    box-shadow: 0 16px 36px rgba(239,35,60,.32);
+    box-shadow: 0 16px 36px rgba(239, 35, 60, .30);
     margin-top: 8px;
 }
 
@@ -503,7 +408,6 @@ div[data-testid="stExpander"] {
     justify-content: center;
     font-size: 58px;
     font-weight: 1000;
-    box-shadow: 0 14px 30px rgba(34,197,94,.30);
 }
 
 .success-title {
@@ -551,24 +455,23 @@ div[data-testid="stExpander"] {
     margin: 18px 0 12px 0;
 }
 
-.list-card {
-    position: relative;
-    display: grid;
-    grid-template-columns: 58px 1fr 72px;
-    gap: 10px;
-    align-items: center;
+.latest-card {
     background: rgba(255,255,255,.94);
     border: 1px solid #e5e7eb;
     border-radius: 22px;
     padding: 11px;
-    box-shadow: 0 13px 31px rgba(15,23,42,.075);
+    display: grid;
+    grid-template-columns: 58px 1fr 70px;
+    gap: 10px;
+    align-items: center;
+    box-shadow: 0 13px 31px rgba(15, 23, 42, .075);
     margin-bottom: 10px;
 }
 
-.list-bar {
-    min-height: 82px;
-    color: white;
+.time-box {
+    min-height: 76px;
     border-radius: 16px;
+    color: white;
     font-size: 14px;
     font-weight: 1000;
     display: flex;
@@ -576,58 +479,33 @@ div[data-testid="stExpander"] {
     justify-content: center;
 }
 
-.list-top {
-    display: flex;
-    justify-content: space-between;
-    gap: 8px;
-}
-
-.list-title {
+.latest-title {
     color: #111827;
     font-size: 18px;
     font-weight: 1000;
 }
 
-.list-sub,
-.list-foot {
+.latest-sub {
     color: #475569;
     font-size: 13px;
     font-weight: 800;
     margin-top: 3px;
 }
 
-.qty-badge {
-    color: #16a34a;
-    font-size: 16px;
-    font-weight: 1000;
-    white-space: nowrap;
-}
-
 .thumb {
-    width: 66px;
-    height: 66px;
+    width: 64px;
+    height: 64px;
     border-radius: 16px;
     object-fit: cover;
     border: 1px solid #e5e7eb;
 }
 
 .empty-thumb {
-    background: linear-gradient(180deg, #f8fafc, #eef2ff);
+    background: #f8fafc;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 30px;
-}
-
-.sev-chip {
-    position: absolute;
-    right: 12px;
-    top: 7px;
-    color: white;
-    border-radius: 999px;
-    padding: 3px 8px;
-    font-size: 11px;
-    font-weight: 1000;
+    font-size: 28px;
 }
 
 .metric-grid {
@@ -645,7 +523,7 @@ div[data-testid="stExpander"] {
     display: flex;
     gap: 11px;
     align-items: center;
-    box-shadow: 0 13px 31px rgba(15,23,42,.075);
+    box-shadow: 0 13px 31px rgba(15, 23, 42, .075);
 }
 
 .metric-icon {
@@ -661,7 +539,7 @@ div[data-testid="stExpander"] {
     font-size: 26px;
 }
 
-.metric-title {
+.metric-label {
     color: #64748b;
     font-size: 13px;
     font-weight: 900;
@@ -676,7 +554,7 @@ div[data-testid="stExpander"] {
 }
 
 .rank-card,
-.simple-rank {
+.problem-card {
     background: rgba(255,255,255,.94);
     border: 1px solid #e5e7eb;
     border-radius: 22px;
@@ -684,54 +562,47 @@ div[data-testid="stExpander"] {
     display: grid;
     align-items: center;
     gap: 10px;
-    box-shadow: 0 13px 31px rgba(15,23,42,.075);
+    box-shadow: 0 13px 31px rgba(15, 23, 42, .075);
     margin-bottom: 10px;
 }
 
 .rank-card {
-    grid-template-columns: 48px 42px 1fr auto;
+    grid-template-columns: 48px 1fr auto;
 }
 
-.rank-medal {
-    width: 43px;
-    height: 43px;
+.problem-card {
+    grid-template-columns: 44px 1fr auto;
+}
+
+.rank-medal,
+.problem-no {
+    width: 42px;
+    height: 42px;
     border-radius: 999px;
     background: #fff7ed;
     border: 1px solid #fed7aa;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 20px;
+    font-size: 19px;
     font-weight: 1000;
 }
 
-.rank-avatar {
-    width: 42px;
-    height: 42px;
-    border-radius: 999px;
-    background: #e0f2fe;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 22px;
-}
-
 .rank-name,
-.simple-title {
+.problem-name {
     color: #111827;
     font-size: 16px;
     font-weight: 1000;
 }
 
 .rank-sub,
-.simple-sub {
+.problem-sub {
     color: #64748b;
     font-size: 12px;
     font-weight: 800;
 }
 
-.rank-score,
-.simple-score {
+.rank-score {
     color: #16a34a;
     font-size: 20px;
     font-weight: 1000;
@@ -743,19 +614,11 @@ div[data-testid="stExpander"] {
     font-size: 12px;
 }
 
-.simple-rank {
-    grid-template-columns: 44px 1fr auto;
-}
-
-.simple-no {
-    color: white;
-    width: 38px;
-    height: 38px;
-    border-radius: 14px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+.problem-score {
+    color: #ef233c;
+    font-size: 18px;
     font-weight: 1000;
+    text-align: right;
 }
 
 .qr-box {
@@ -763,7 +626,7 @@ div[data-testid="stExpander"] {
     border: 1px solid #dbeafe;
     border-radius: 24px;
     padding: 15px;
-    box-shadow: 0 13px 31px rgba(15,23,42,.075);
+    box-shadow: 0 13px 31px rgba(15, 23, 42, .075);
     margin-top: 12px;
 }
 
@@ -779,49 +642,60 @@ div[data-testid="stExpander"] {
 }
 
 @media (max-width: 640px) {
-    .brand-title { font-size: 34px; }
-    .logo { width: 58px; height: 58px; font-size: 32px; }
-    .top-actions { grid-template-columns: 1fr 1fr; }
-    .metric-grid, .success-grid { grid-template-columns: 1fr; }
-    .list-card { grid-template-columns: 54px 1fr 62px; }
-    .thumb { width: 58px; height: 58px; }
-    .rank-card { grid-template-columns: 43px 38px 1fr; }
-    .rank-score { grid-column: 3; text-align: left; }
+    .title {
+        font-size: 34px;
+    }
+    .logo {
+        width: 58px;
+        height: 58px;
+        font-size: 32px;
+    }
+    .metric-grid,
+    .success-grid {
+        grid-template-columns: 1fr;
+    }
+    .latest-card {
+        grid-template-columns: 54px 1fr 62px;
+    }
+    .thumb {
+        width: 58px;
+        height: 58px;
+    }
 }
 </style>
 """,
     unsafe_allow_html=True,
 )
 
-st.markdown('<div class="app-frame">', unsafe_allow_html=True)
 st.markdown(
     f"""
+<div class="app-header">
     <div style="color:#94a3b8;font-size:12px;font-weight:900;margin-bottom:8px;">{APP_VERSION}</div>
-    <div class="hero">
+    <div class="brand">
         <div class="logo">🚨</div>
         <div>
-            <div class="brand-title">QUALITY <span>ALERT</span></div>
-            <div class="brand-sub">ทุกคนคือ QA ป้องกันก่อนเสีย ส่งก่อนรอด</div>
+            <div class="title">QUALITY <span>ALERT</span></div>
+            <div class="subtitle">แจ้งง่าย เห็นเร็ว ป้องกันก่อนเสีย</div>
         </div>
     </div>
-    """,
+</div>
+""",
     unsafe_allow_html=True,
 )
-st.markdown('</div>', unsafe_allow_html=True)
 
 tab_alert, tab_latest, tab_dashboard, tab_qr = st.tabs(
     ["🚨 แจ้งปัญหา", "📋 ล่าสุด", "📊 Dashboard", "🔗 QR"]
 )
 
 with tab_alert:
-    st.markdown('<div class="form-phone">', unsafe_allow_html=True)
+    st.markdown('<div class="form-card">', unsafe_allow_html=True)
     st.markdown(
         """
-        <div class="phone-top">
-            <div class="phone-icon">🚨</div>
+        <div class="form-top">
+            <div class="form-icon">🚨</div>
             <div>
-                <div class="phone-title">แจ้งเตือนปัญหาคุณภาพ</div>
-                <div class="phone-sub">กรอกข้อมูลสั้น ๆ แล้วส่งแจ้งเตือน</div>
+                <div class="form-title">แจ้งปัญหาหน้างาน</div>
+                <div class="form-sub">เจออะไร • กี่ใบ • รุนแรงแค่ไหน</div>
             </div>
         </div>
         """,
@@ -835,27 +709,20 @@ with tab_alert:
 
         machine = st.selectbox("🏭 เครื่อง", MACHINES, index=0)
 
-        category = st.selectbox("📂 หมวดปัญหา", PROBLEM_CATEGORIES, index=0)
+        problem_select = st.selectbox("🔍 ปัญหาที่พบ", PROBLEMS, index=0)
 
-        area = st.selectbox("📍 จุดที่พบ", AREAS, index=0)
-
-        defect = st.selectbox("🔍 อาการที่พบ", DEFECTS[category])
+        custom_problem = ""
+        if problem_select == "อื่นๆ":
+            custom_problem = st.text_input("✍️ ระบุปัญหา", placeholder="พิมพ์ปัญหาที่พบ")
 
         qty = st.number_input("🔢 จำนวนที่พบ / ใบ", min_value=1, step=1)
 
-        impact = st.radio("⚠️ ถ้าไม่เจอจะหลุดถึง", IMPACT_LEVELS, horizontal=True)
-
-        severity = st.radio("🚦 ระดับความรุนแรง", SEVERITY_LIST, horizontal=True)
-
-        note = st.text_area(
-            "📝 รายละเอียดเพิ่มเติม",
-            placeholder="เช่น จุดที่พบ / สาเหตุคร่าวๆ / วิธีป้องกันเบื้องต้น",
-        )
+        severity = st.radio("🚦 ความรุนแรง", SEVERITY_LIST, horizontal=True)
 
         image = None
         upload_image = None
 
-        with st.expander("📷 เพิ่มรูปภาพ / ถ่ายภาพประกอบ (ไม่บังคับ)", expanded=False):
+        with st.expander("📷 เพิ่มรูปภาพ (ไม่บังคับ)", expanded=False):
             image = st.camera_input("📷 แตะเพื่อถ่ายภาพ")
             upload_image = st.file_uploader(
                 "หรือเลือกภาพจากเครื่อง",
@@ -872,13 +739,20 @@ with tab_alert:
             st.error("กรุณาใส่ชื่อผู้แจ้ง")
             st.stop()
 
+        problem = custom_problem.strip() if problem_select == "อื่นๆ" else problem_select
+
+        if not problem:
+            st.error("กรุณาระบุปัญหาที่พบ")
+            st.stop()
+
         now = datetime.now()
         img_path = ""
 
         final_image = image if image is not None else upload_image
 
         if final_image is not None:
-            img_name = f"{now.strftime('%Y%m%d_%H%M%S')}_{machine}.jpg"
+            safe_machine = machine.replace("/", "-")
+            img_name = f"{now.strftime('%Y%m%d_%H%M%S')}_{safe_machine}.jpg"
             img_path = IMG_DIR / img_name
             with open(img_path, "wb") as f:
                 f.write(final_image.getbuffer())
@@ -890,16 +764,12 @@ with tab_alert:
             "เวลา": now.strftime("%H:%M:%S"),
             "ผู้แจ้ง": reporter.strip(),
             "เครื่อง": machine,
-            "หมวดปัญหา": category,
-            "จุดที่พบ": area,
-            "หน่วยงาน": area,
-            "อาการ": defect,
+            "ปัญหาที่พบ": problem,
+            "อาการ": problem,
             "จำนวน": int(qty),
-            "หลุดถึง": impact,
             "ระดับ": severity,
             "มูลค่าป้องกัน": damage_value,
             "รูปภาพ": str(img_path),
-            "รายละเอียด": note,
             "สถานะ": "Open",
         }
 
@@ -932,15 +802,15 @@ with tab_alert:
                 <div class="success-sub">บันทึกข้อมูลแล้ว ขอบคุณที่ช่วยป้องกันงานเสีย</div>
                 <div class="success-grid">
                     <div class="success-box">
+                        <div class="success-label">ปัญหา</div>
+                        <div class="success-value">{problem}</div>
+                    </div>
+                    <div class="success-box">
                         <div class="success-label">เครื่อง</div>
                         <div class="success-value">{machine}</div>
                     </div>
                     <div class="success-box">
-                        <div class="success-label">หมวดปัญหา</div>
-                        <div class="success-value">{category_icon(category)} {category}</div>
-                    </div>
-                    <div class="success-box">
-                        <div class="success-label">ป้องกันได้</div>
+                        <div class="success-label">จำนวน</div>
                         <div class="success-value">{int(qty):,} ใบ</div>
                     </div>
                     <div class="success-box">
@@ -974,7 +844,9 @@ with tab_dashboard:
     else:
         df_dash = df.copy()
         df_dash["จำนวน"] = pd.to_numeric(df_dash["จำนวน"], errors="coerce").fillna(0).astype(int)
-        df_dash["มูลค่าป้องกัน"] = pd.to_numeric(df_dash["มูลค่าป้องกัน"], errors="coerce").fillna(0)
+        df_dash["มูลค่าป้องกัน"] = pd.to_numeric(
+            df_dash["มูลค่าป้องกัน"], errors="coerce"
+        ).fillna(0)
 
         total_cases = len(df_dash)
         total_qty = int(df_dash["จำนวน"].sum())
@@ -989,37 +861,15 @@ with tab_dashboard:
         )
 
         st.markdown('<div class="metric-grid">', unsafe_allow_html=True)
-        metric_card("แจ้งทั้งหมด", f"{total_cases:,} เคส", "🔔", "#ff2f4d")
-        metric_card("ป้องกันได้", f"{total_qty:,} ใบ", "🛡️", "#20c767")
+        metric_card("แจ้งทั้งหมด", f"{total_cases:,} เคส", "🔔", "#ef233c")
+        metric_card("ป้องกันได้", f"{total_qty:,} ใบ", "🛡️", "#22c55e")
         metric_card("ผู้มีส่วนร่วม", f"{total_reporters:,} คน", "👥", "#2563eb")
-        metric_card("มูลค่าป้องกัน", f"{total_value:,} บาท", "💰", "#ffb020")
+        metric_card("มูลค่าป้องกัน", f"{total_value:,} บาท", "💰", "#f59e0b")
         st.markdown('</div>', unsafe_allow_html=True)
 
-        st.markdown('<div class="section-title">🏭 Top เครื่องที่พบปัญหา</div>', unsafe_allow_html=True)
-        machine_df = df_dash[["เครื่อง", "จำนวน"]].copy()
-        machine_df["เครื่อง"] = machine_df["เครื่อง"].astype(str).str.strip().replace("", "ไม่ระบุ")
-        machine_qty = machine_df.groupby("เครื่อง")["จำนวน"].sum().reset_index().rename(columns={"จำนวน": "จำนวนใบ"})
-        machine_case = machine_df.groupby("เครื่อง").size().reset_index(name="จำนวนเคส")
-        machine_top = pd.merge(machine_qty, machine_case, on="เครื่อง", how="left")
-        machine_top["จำนวนใบ"] = pd.to_numeric(machine_top["จำนวนใบ"], errors="coerce").fillna(0).astype(int)
-        machine_top = machine_top.nlargest(5, "จำนวนใบ").reset_index(drop=True)
-        for i, row in machine_top.iterrows():
-            simple_rank(str(row["เครื่อง"]), f"{int(row['จำนวนเคส']):,} เคส", f"{int(row['จำนวนใบ']):,} ใบ", "#2563eb", str(i + 1))
+        st.markdown('<div class="section-title">🏆 Top 5 ผู้แจ้ง</div>', unsafe_allow_html=True)
 
-        st.markdown('<div class="section-title">📂 Top หมวดปัญหา</div>', unsafe_allow_html=True)
-        cat_df = df_dash[["หมวดปัญหา", "จำนวน"]].copy()
-        cat_df["หมวดปัญหา"] = cat_df["หมวดปัญหา"].astype(str).str.strip().replace("", "อื่นๆ")
-        cat_qty = cat_df.groupby("หมวดปัญหา")["จำนวน"].sum().reset_index().rename(columns={"จำนวน": "จำนวนใบ"})
-        cat_case = cat_df.groupby("หมวดปัญหา").size().reset_index(name="จำนวนเคส")
-        cat_top = pd.merge(cat_qty, cat_case, on="หมวดปัญหา", how="left")
-        cat_top["จำนวนใบ"] = pd.to_numeric(cat_top["จำนวนใบ"], errors="coerce").fillna(0).astype(int)
-        cat_top = cat_top.nlargest(5, "จำนวนใบ").reset_index(drop=True)
-        for i, row in cat_top.iterrows():
-            simple_rank(f"{category_icon(row['หมวดปัญหา'])} {row['หมวดปัญหา']}", f"{int(row['จำนวนเคส']):,} เคส", f"{int(row['จำนวนใบ']):,} ใบ", "#ff2f4d", str(i + 1))
-
-        st.markdown('<div class="section-title">🏆 Top 5 ผู้มีส่วนร่วม</div>', unsafe_allow_html=True)
-
-        reporter_df = df_dash[["ผู้แจ้ง", "เครื่อง", "จำนวน"]].copy()
+        reporter_df = df_dash[["ผู้แจ้ง", "จำนวน"]].copy()
         reporter_df["ผู้แจ้ง"] = reporter_df["ผู้แจ้ง"].astype(str).str.strip()
         reporter_df = reporter_df[reporter_df["ผู้แจ้ง"] != ""]
 
@@ -1035,14 +885,7 @@ with tab_dashboard:
 
             top_case = reporter_df.groupby("ผู้แจ้ง").size().reset_index(name="จำนวนเคส")
 
-            top_machine = (
-                reporter_df.groupby("ผู้แจ้ง")["เครื่อง"]
-                .agg(lambda x: str(x.dropna().iloc[-1]) if len(x.dropna()) else "")
-                .reset_index()
-            )
-
             top = pd.merge(top_qty, top_case, on="ผู้แจ้ง", how="left")
-            top = pd.merge(top, top_machine, on="ผู้แจ้ง", how="left")
             top["จำนวนใบ"] = pd.to_numeric(top["จำนวนใบ"], errors="coerce").fillna(0).astype(int)
             top["จำนวนเคส"] = pd.to_numeric(top["จำนวนเคส"], errors="coerce").fillna(0).astype(int)
             top = top.nlargest(5, "จำนวนใบ").reset_index(drop=True)
@@ -1051,20 +894,61 @@ with tab_dashboard:
                 rank_card(
                     i + 1,
                     str(row["ผู้แจ้ง"]),
-                    str(row.get("เครื่อง", "")),
+                    int(row["จำนวนใบ"]),
+                    int(row["จำนวนเคส"]),
+                )
+
+        st.markdown('<div class="section-title">🔍 Top ปัญหาที่พบ</div>', unsafe_allow_html=True)
+
+        problem_df = df_dash[["ปัญหาที่พบ", "จำนวน"]].copy()
+        problem_df["ปัญหาที่พบ"] = problem_df["ปัญหาที่พบ"].astype(str).str.strip()
+        problem_df = problem_df[problem_df["ปัญหาที่พบ"] != ""]
+
+        if problem_df.empty:
+            st.info("ยังไม่มีข้อมูลปัญหา")
+        else:
+            problem_qty = (
+                problem_df.groupby("ปัญหาที่พบ")["จำนวน"]
+                .sum()
+                .reset_index()
+                .rename(columns={"จำนวน": "จำนวนใบ"})
+            )
+
+            problem_case = (
+                problem_df.groupby("ปัญหาที่พบ")
+                .size()
+                .reset_index(name="จำนวนเคส")
+            )
+
+            problem_top = pd.merge(problem_qty, problem_case, on="ปัญหาที่พบ", how="left")
+            problem_top["จำนวนใบ"] = pd.to_numeric(
+                problem_top["จำนวนใบ"], errors="coerce"
+            ).fillna(0).astype(int)
+            problem_top["จำนวนเคส"] = pd.to_numeric(
+                problem_top["จำนวนเคส"], errors="coerce"
+            ).fillna(0).astype(int)
+            problem_top = problem_top.nlargest(5, "จำนวนใบ").reset_index(drop=True)
+
+            for i, row in problem_top.iterrows():
+                problem_card(
+                    i + 1,
+                    str(row["ปัญหาที่พบ"]),
                     int(row["จำนวนใบ"]),
                     int(row["จำนวนเคส"]),
                 )
 
 with tab_qr:
     st.markdown('<div class="qr-box">', unsafe_allow_html=True)
-    st.markdown('<div style="font-size:20px;font-weight:1000;color:#0f172a;margin-bottom:8px;">🔗 ลิงก์สำหรับทำ QR จุดเดียว</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div style="font-size:20px;font-weight:1000;color:#0f172a;margin-bottom:8px;">🔗 ลิงก์สำหรับทำ QR จุดเดียว</div>',
+        unsafe_allow_html=True,
+    )
     base_url = "https://quality-alert-9j5j2cx7n5ddb6qsr7wd3j.streamlit.app"
     st.code(base_url)
     st.markdown(
         """
         <div class="help-card">
-        ใช้ QR จุดเดียว เปิดมาเลือกเครื่อง / หมวดปัญหา / จุดที่พบ จาก Dropdown ได้เลย
+        ใช้ QR จุดเดียว เปิดมาเลือกเครื่อง / ปัญหาที่พบ / จำนวน / ความรุนแรง แล้วส่งได้ทันที
         </div>
         """,
         unsafe_allow_html=True,
