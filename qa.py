@@ -6,7 +6,7 @@ import base64
 
 st.set_page_config(page_title="QUALITY ALERT", page_icon="🚨", layout="centered")
 
-APP_VERSION = "V13-SIMPLE-SCORE"
+APP_VERSION = "V14-SEVERITY-SIZE-CLEAR"
 
 DATA_FILE = Path("quality_alert.xlsx")
 IMG_DIR = Path("images")
@@ -46,7 +46,7 @@ PROBLEMS = [
     "อื่นๆ",
 ]
 
-SEVERITY_LIST = ["ต่ำ", "กลาง", "สูง"]
+SEVERITY_LIST = ["🟢 Improvement", "🟡 Attention", "🔴 Critical Alert"]
 COST_PER_SHEET = 2.5
 
 
@@ -72,6 +72,7 @@ def load_data():
         "รูปภาพ": "",
         "สถานะ": "Open",
         "คะแนน": 0,
+        "ขนาดเหตุการณ์": "",
     }
 
     for col, default in required_cols.items():
@@ -88,6 +89,7 @@ def load_data():
 
     df["ปัญหาที่พบ"] = df["ปัญหาที่พบ"].astype(str).replace("nan", "").replace("", "ไม่ระบุ")
     df["จำนวน"] = pd.to_numeric(df["จำนวน"], errors="coerce").fillna(0).astype(int)
+    df["ขนาดเหตุการณ์"] = df["ขนาดเหตุการณ์"].astype(str).replace("nan", "").replace("", "")
     df["มูลค่าป้องกัน"] = pd.to_numeric(df["มูลค่าป้องกัน"], errors="coerce").fillna(0)
     df["คะแนน"] = pd.to_numeric(df["คะแนน"], errors="coerce").fillna(0).astype(int)
 
@@ -97,6 +99,9 @@ def load_data():
 
     mask_value = df["มูลค่าป้องกัน"] <= 0
     df.loc[mask_value, "มูลค่าป้องกัน"] = df.loc[mask_value, "จำนวน"] * COST_PER_SHEET
+
+    missing_size = df["ขนาดเหตุการณ์"].astype(str).str.strip() == ""
+    df.loc[missing_size, "ขนาดเหตุการณ์"] = df.loc[missing_size, "จำนวน"].apply(get_event_size)
 
     return df
 
@@ -127,11 +132,22 @@ def image_to_base64(path):
 
 def severity_style(severity):
     severity = str(severity).strip()
-    if severity == "สูง":
-        return "#ef233c", "🔴"
-    if severity == "กลาง":
-        return "#f59e0b", "🟡"
-    return "#22c55e", "🟢"
+    if "Critical" in severity or "สูง" in severity:
+        return "#ef233c", "🚑", "Critical Alert"
+    if "Attention" in severity or "กลาง" in severity:
+        return "#f59e0b", "🚔", "Attention"
+    return "#22c55e", "💡", "Improvement"
+
+
+def get_event_size(qty):
+    qty = safe_int(qty)
+    if qty <= 50:
+        return "🔹 น้อย"
+    if qty <= 200:
+        return "🔸 ปานกลาง"
+    if qty <= 500:
+        return "🔶 มาก"
+    return "🔥 วิกฤต"
 
 
 def metric_card(label, value, icon, color):
@@ -159,9 +175,10 @@ def latest_card(row):
     severity = str(row.get("ระดับ", ""))
     value = safe_int(row.get("มูลค่าป้องกัน", 0))
     score = safe_int(row.get("คะแนน", 0))
+    event_size = str(row.get("ขนาดเหตุการณ์", get_event_size(qty)))
     img_path = str(row.get("รูปภาพ", "")).strip()
 
-    color, icon = severity_style(severity)
+    color, icon, severity_text = severity_style(severity)
     img64 = image_to_base64(img_path)
 
     if img64:
@@ -174,8 +191,9 @@ def latest_card(row):
         <div class="latest-card">
             <div class="time-box" style="background:{color};">{time[:5]}</div>
             <div class="latest-main">
-                <div class="latest-title">{icon} {problem}</div>
-                <div class="latest-sub">{machine} • {qty:,} ใบ</div>
+                <div class="latest-title">{icon} {severity_text}</div>
+                <div class="latest-sub"><b>{problem}</b> • {machine}</div>
+                <div class="latest-sub">{event_size} • {qty:,} ใบ</div>
                 <div class="latest-sub">👤 {reporter} • {date} • 🏆 {score} คะแนน</div>
             </div>
             {img_html}
@@ -193,9 +211,9 @@ def rank_card(rank, name, qty, cases):
             <div class="rank-medal">{medal}</div>
             <div class="rank-info">
                 <div class="rank-name">{name}</div>
-                <div class="rank-sub">{cases:,} เคส</div>
+                <div class="rank-sub">อ้างอิง {cases:,}</div>
             </div>
-            <div class="rank-score">{qty:,}<span> คะแนน</span></div>
+            <div class="rank-score">{qty:,}<span></span></div>
         </div>
         """,
         unsafe_allow_html=True,
@@ -769,10 +787,12 @@ with tab_alert:
         score = 1
         if final_image is not None:
             score += 1
-        if severity == "กลาง":
+        if "Attention" in severity:
             score += 1
-        elif severity == "สูง":
+        elif "Critical" in severity:
             score += 2
+
+        event_size = get_event_size(qty)
 
         new_row = {
             "วันที่": now.strftime("%d/%m/%Y"),
@@ -787,6 +807,7 @@ with tab_alert:
             "รูปภาพ": str(img_path),
             "สถานะ": "Open",
             "คะแนน": score,
+            "ขนาดเหตุการณ์": event_size,
         }
 
         df = load_data()
@@ -813,12 +834,20 @@ with tab_alert:
                 rank_text = f"#{hit[0] + 1}"
                 total_my_score = int(rank_df.loc[hit[0], "คะแนนรวม"])
 
+        alert_color, alert_icon, alert_name = severity_style(severity)
+        if "Critical" in severity:
+            alert_message = "พบเหตุที่ควรตรวจสอบทันที"
+        elif "Attention" in severity:
+            alert_message = "รับทราบแล้ว โปรดเฝ้าระวังและติดตาม"
+        else:
+            alert_message = "รับข้อมูลเรียบร้อย ขอบคุณที่ช่วยป้องกันปัญหา"
+
         st.markdown(
             f"""
             <div class="success-card">
-                <div class="success-check">✓</div>
-                <div class="success-title">แจ้งเตือนสำเร็จ!</div>
-                <div class="success-sub">บันทึกข้อมูลแล้ว ขอบคุณที่ช่วยป้องกันงานเสีย</div>
+                <div class="success-check" style="background:{alert_color};">{alert_icon}</div>
+                <div class="success-title">{alert_name}</div>
+                <div class="success-sub">{alert_message}</div>
                 <div class="success-grid">
                     <div class="success-box">
                         <div class="success-label">ปัญหา</div>
@@ -829,19 +858,18 @@ with tab_alert:
                         <div class="success-value">{machine}</div>
                     </div>
                     <div class="success-box">
-                        <div class="success-label">ได้รับคะแนน</div>
-                        <div class="success-value">+{score}</div>
+                        <div class="success-label">ขนาดเหตุการณ์</div>
+                        <div class="success-value">{event_size}</div>
                     </div>
                     <div class="success-box">
                         <div class="success-label">คะแนนสะสม</div>
-                        <div class="success-value">{total_my_score}</div>
+                        <div class="success-value">+{score} / {total_my_score}</div>
                     </div>
                 </div>
             </div>
             """,
             unsafe_allow_html=True,
         )
-        st.balloons()
 
 with tab_latest:
     st.markdown('<div class="section-title">📋 รายการแจ้งเตือนล่าสุด</div>', unsafe_allow_html=True)
@@ -887,7 +915,7 @@ with tab_dashboard:
         metric_card("คะแนนรวม", f"{total_score:,} คะแนน", "🏆", "#f59e0b")
         st.markdown('</div>', unsafe_allow_html=True)
 
-        st.markdown('<div class="section-title">🏆 Top 5 ผู้แจ้ง</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-title">🏆 ผู้มีส่วนร่วมสูงสุด</div>', unsafe_allow_html=True)
 
         reporter_df = df_dash[["ผู้แจ้ง", "คะแนน"]].copy()
         reporter_df["ผู้แจ้ง"] = reporter_df["ผู้แจ้ง"].astype(str).str.strip()
@@ -897,21 +925,44 @@ with tab_dashboard:
         if reporter_df.empty:
             st.info("ยังไม่มีข้อมูลผู้แจ้ง")
         else:
+            top_case = reporter_df.groupby("ผู้แจ้ง").size().reset_index(name="จำนวนเคส")
             top_score = (
                 reporter_df.groupby("ผู้แจ้ง")["คะแนน"]
                 .sum()
                 .reset_index()
                 .rename(columns={"คะแนน": "คะแนนรวม"})
             )
-
-            top_case = reporter_df.groupby("ผู้แจ้ง").size().reset_index(name="จำนวนเคส")
-
-            top = pd.merge(top_score, top_case, on="ผู้แจ้ง", how="left")
-            top["คะแนนรวม"] = pd.to_numeric(top["คะแนนรวม"], errors="coerce").fillna(0).astype(int)
+            top = pd.merge(top_case, top_score, on="ผู้แจ้ง", how="left")
             top["จำนวนเคส"] = pd.to_numeric(top["จำนวนเคส"], errors="coerce").fillna(0).astype(int)
-            top = top.nlargest(5, "คะแนนรวม").reset_index(drop=True)
+            top["คะแนนรวม"] = pd.to_numeric(top["คะแนนรวม"], errors="coerce").fillna(0).astype(int)
+            top = top.nlargest(5, "จำนวนเคส").reset_index(drop=True)
 
             for i, row in top.iterrows():
+                rank_card(
+                    i + 1,
+                    str(row["ผู้แจ้ง"]),
+                    int(row["จำนวนเคส"]),
+                    int(row["คะแนนรวม"]),
+                )
+
+        st.markdown('<div class="section-title">🚨 คะแนนความรุนแรงสูงสุด</div>', unsafe_allow_html=True)
+
+        if reporter_df.empty:
+            st.info("ยังไม่มีข้อมูลคะแนน")
+        else:
+            critical_top = (
+                reporter_df.groupby("ผู้แจ้ง")["คะแนน"]
+                .sum()
+                .reset_index()
+                .rename(columns={"คะแนน": "คะแนนรวม"})
+            )
+            critical_case = reporter_df.groupby("ผู้แจ้ง").size().reset_index(name="จำนวนเคส")
+            critical_top = pd.merge(critical_top, critical_case, on="ผู้แจ้ง", how="left")
+            critical_top["คะแนนรวม"] = pd.to_numeric(critical_top["คะแนนรวม"], errors="coerce").fillna(0).astype(int)
+            critical_top["จำนวนเคส"] = pd.to_numeric(critical_top["จำนวนเคส"], errors="coerce").fillna(0).astype(int)
+            critical_top = critical_top.nlargest(5, "คะแนนรวม").reset_index(drop=True)
+
+            for i, row in critical_top.iterrows():
                 rank_card(
                     i + 1,
                     str(row["ผู้แจ้ง"]),
