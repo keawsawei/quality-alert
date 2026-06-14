@@ -5,7 +5,7 @@ from pathlib import Path
 
 st.set_page_config(page_title="QUALITY ALERT", page_icon="🚨", layout="centered")
 
-APP_VERSION = "V6-MOBILE-APP-STYLE"
+APP_VERSION = "V7-LUXURY-APP-DD-DEPT"
 
 DATA_FILE = Path("quality_alert.xlsx")
 IMG_DIR = Path("images")
@@ -177,9 +177,8 @@ def make_latest_card(row):
     )
 
 
-dept_qr = st.query_params.get("dept", "ตอก")
-if dept_qr not in DEPTS:
-    dept_qr = "ตอก"
+# V7: ไม่แยกลิงก์ตามแผนกแล้ว เลือกหน่วยงานจาก Dropdown แทน
+dept_qr = "ตอก"
 
 st.markdown(
     """
@@ -606,6 +605,29 @@ hr {
     .latest-img { width: 62px; height: 62px; }
     .metric-value { font-size: 28px; }
 }
+
+.stApp {
+    background:
+        radial-gradient(circle at top left, rgba(37, 99, 235, 0.16), transparent 34%),
+        radial-gradient(circle at top right, rgba(239, 35, 60, 0.14), transparent 30%),
+        linear-gradient(180deg, #f8fbff 0%, #eef4ff 52%, #f8fafc 100%);
+}
+.lux-shell, .form-card, .metric-card, .latest-card, .rank-card, .defect-card, .bottom-guide {
+    backdrop-filter: blur(16px);
+}
+.form-card {
+    background: rgba(255,255,255,0.88) !important;
+    border-radius: 28px !important;
+    box-shadow: 0 20px 52px rgba(15, 23, 42, 0.10) !important;
+}
+.hero-logo {
+    box-shadow: 0 18px 40px rgba(239, 35, 60, 0.32) !important;
+}
+.quick-tabs {
+    background: rgba(255,255,255,0.78) !important;
+    border-radius: 24px !important;
+}
+
 </style>
 """,
     unsafe_allow_html=True,
@@ -633,15 +655,10 @@ st.markdown(
 )
 
 st.markdown(
-    f'<div class="dept-card">{DEPT_ICONS.get(dept_qr, "📍")} หน่วยงาน : {dept_qr}</div>',
-    unsafe_allow_html=True,
-)
-
-st.markdown(
     """
 <div class="form-card">
-    <div class="form-title">📝 กรอกข้อมูลปัญหา</div>
-    <div class="form-sub">กรอกเฉพาะข้อมูลจำเป็น แล้วส่งแจ้งเตือนได้ทันที</div>
+    <div class="form-title">✨ แจ้งปัญหาคุณภาพ</div>
+    <div class="form-sub">เลือกหน่วยงานจาก Dropdown จุดเดียว ไม่ต้องแยก QR ตามแผนก</div>
 </div>
 """,
     unsafe_allow_html=True,
@@ -650,8 +667,7 @@ st.markdown(
 with st.form("alert_form", clear_on_submit=True):
     reporter = st.text_input("👤 ผู้แจ้ง", placeholder="ใส่ชื่อผู้แจ้ง")
 
-    department = dept_qr
-    st.caption(f"ระบบเลือกหน่วยงานจาก QR อัตโนมัติ: {department}")
+    department = st.selectbox("🏭 หน่วยงาน", DEPTS, index=0)
 
     defect = st.selectbox("🔍 อาการที่พบ", DEFECTS[department])
 
@@ -880,8 +896,8 @@ st.markdown(
 <div class="bottom-guide">
     <div class="guide-title">วิธีใช้งานง่ายๆ</div>
     <div class="guide-row">
-        <div class="guide-step"><div class="guide-icon">📱</div>สแกน QR</div>
-        <div class="guide-step"><div class="guide-icon">📷</div>ถ่ายรูป</div>
+        <div class="guide-step"><div class="guide-icon">📱</div>เปิดลิงก์</div>
+        <div class="guide-step"><div class="guide-icon">🏭</div>เลือกแผนก</div>
         <div class="guide-step"><div class="guide-icon">📝</div>กรอกข้อมูล</div>
         <div class="guide-step"><div class="guide-icon">📨</div>ส่งแจ้งเตือน</div>
     </div>
@@ -890,9 +906,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-st.subheader("🔗 ลิงก์สำหรับทำ QR")
+st.subheader("🔗 ลิงก์สำหรับทำ QR จุดเดียว")
 
 base_url = "https://quality-alert-9j5j2cx7n5ddb6qsr7wd3j.streamlit.app"
-
-for dept in DEPTS:
-    st.code(f"{base_url}/?dept={dept}")
+st.code(base_url)
