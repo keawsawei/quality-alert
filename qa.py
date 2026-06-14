@@ -6,7 +6,7 @@ import base64
 
 st.set_page_config(page_title="QUALITY ALERT", page_icon="🚨", layout="centered")
 
-APP_VERSION = "V12-SIMPLE-ALERT"
+APP_VERSION = "V13-SIMPLE-SCORE"
 
 DATA_FILE = Path("quality_alert.xlsx")
 IMG_DIR = Path("images")
@@ -71,6 +71,7 @@ def load_data():
         "มูลค่าป้องกัน": 0,
         "รูปภาพ": "",
         "สถานะ": "Open",
+        "คะแนน": 0,
     }
 
     for col, default in required_cols.items():
@@ -88,6 +89,11 @@ def load_data():
     df["ปัญหาที่พบ"] = df["ปัญหาที่พบ"].astype(str).replace("nan", "").replace("", "ไม่ระบุ")
     df["จำนวน"] = pd.to_numeric(df["จำนวน"], errors="coerce").fillna(0).astype(int)
     df["มูลค่าป้องกัน"] = pd.to_numeric(df["มูลค่าป้องกัน"], errors="coerce").fillna(0)
+    df["คะแนน"] = pd.to_numeric(df["คะแนน"], errors="coerce").fillna(0).astype(int)
+
+    # migrate old score: old records get at least 1 point
+    old_score_mask = df["คะแนน"] <= 0
+    df.loc[old_score_mask, "คะแนน"] = 1
 
     mask_value = df["มูลค่าป้องกัน"] <= 0
     df.loc[mask_value, "มูลค่าป้องกัน"] = df.loc[mask_value, "จำนวน"] * COST_PER_SHEET
@@ -152,6 +158,7 @@ def latest_card(row):
     qty = safe_int(row.get("จำนวน", 0))
     severity = str(row.get("ระดับ", ""))
     value = safe_int(row.get("มูลค่าป้องกัน", 0))
+    score = safe_int(row.get("คะแนน", 0))
     img_path = str(row.get("รูปภาพ", "")).strip()
 
     color, icon = severity_style(severity)
@@ -169,7 +176,7 @@ def latest_card(row):
             <div class="latest-main">
                 <div class="latest-title">{icon} {problem}</div>
                 <div class="latest-sub">{machine} • {qty:,} ใบ</div>
-                <div class="latest-sub">👤 {reporter} • {date} • 💰 {value:,} บาท</div>
+                <div class="latest-sub">👤 {reporter} • {date} • 🏆 {score} คะแนน</div>
             </div>
             {img_html}
         </div>
@@ -188,7 +195,7 @@ def rank_card(rank, name, qty, cases):
                 <div class="rank-name">{name}</div>
                 <div class="rank-sub">{cases:,} เคส</div>
             </div>
-            <div class="rank-score">{qty:,}<span> ใบ</span></div>
+            <div class="rank-score">{qty:,}<span> คะแนน</span></div>
         </div>
         """,
         unsafe_allow_html=True,
@@ -759,6 +766,14 @@ with tab_alert:
 
         damage_value = int(qty) * COST_PER_SHEET
 
+        score = 1
+        if final_image is not None:
+            score += 1
+        if severity == "กลาง":
+            score += 1
+        elif severity == "สูง":
+            score += 2
+
         new_row = {
             "วันที่": now.strftime("%d/%m/%Y"),
             "เวลา": now.strftime("%H:%M:%S"),
@@ -771,6 +786,7 @@ with tab_alert:
             "มูลค่าป้องกัน": damage_value,
             "รูปภาพ": str(img_path),
             "สถานะ": "Open",
+            "คะแนน": score,
         }
 
         df = load_data()
@@ -779,20 +795,23 @@ with tab_alert:
 
         reporter_df = df[df["ผู้แจ้ง"].astype(str).str.strip() != ""].copy()
         reporter_df["ผู้แจ้ง"] = reporter_df["ผู้แจ้ง"].astype(str).str.strip()
+        reporter_df["คะแนน"] = pd.to_numeric(reporter_df["คะแนน"], errors="coerce").fillna(0).astype(int)
         rank_text = "-"
+        total_my_score = score
 
         if not reporter_df.empty:
             rank_df = (
-                reporter_df.groupby("ผู้แจ้ง")["จำนวน"]
+                reporter_df.groupby("ผู้แจ้ง")["คะแนน"]
                 .sum()
                 .reset_index()
-                .rename(columns={"จำนวน": "จำนวนใบ"})
-                .sort_values("จำนวนใบ", ascending=False)
+                .rename(columns={"คะแนน": "คะแนนรวม"})
+                .sort_values("คะแนนรวม", ascending=False)
                 .reset_index(drop=True)
             )
             hit = rank_df.index[rank_df["ผู้แจ้ง"] == reporter.strip()].tolist()
             if hit:
                 rank_text = f"#{hit[0] + 1}"
+                total_my_score = int(rank_df.loc[hit[0], "คะแนนรวม"])
 
         st.markdown(
             f"""
@@ -810,12 +829,12 @@ with tab_alert:
                         <div class="success-value">{machine}</div>
                     </div>
                     <div class="success-box">
-                        <div class="success-label">จำนวน</div>
-                        <div class="success-value">{int(qty):,} ใบ</div>
+                        <div class="success-label">ได้รับคะแนน</div>
+                        <div class="success-value">+{score}</div>
                     </div>
                     <div class="success-box">
-                        <div class="success-label">อันดับของคุณ</div>
-                        <div class="success-value">{rank_text}</div>
+                        <div class="success-label">คะแนนสะสม</div>
+                        <div class="success-value">{total_my_score}</div>
                     </div>
                 </div>
             </div>
@@ -851,6 +870,7 @@ with tab_dashboard:
         total_cases = len(df_dash)
         total_qty = int(df_dash["จำนวน"].sum())
         total_value = int(df_dash["มูลค่าป้องกัน"].sum())
+        total_score = int(pd.to_numeric(df_dash["คะแนน"], errors="coerce").fillna(0).sum())
         total_reporters = (
             df_dash["ผู้แจ้ง"]
             .astype(str)
@@ -864,37 +884,38 @@ with tab_dashboard:
         metric_card("แจ้งทั้งหมด", f"{total_cases:,} เคส", "🔔", "#ef233c")
         metric_card("ป้องกันได้", f"{total_qty:,} ใบ", "🛡️", "#22c55e")
         metric_card("ผู้มีส่วนร่วม", f"{total_reporters:,} คน", "👥", "#2563eb")
-        metric_card("มูลค่าป้องกัน", f"{total_value:,} บาท", "💰", "#f59e0b")
+        metric_card("คะแนนรวม", f"{total_score:,} คะแนน", "🏆", "#f59e0b")
         st.markdown('</div>', unsafe_allow_html=True)
 
         st.markdown('<div class="section-title">🏆 Top 5 ผู้แจ้ง</div>', unsafe_allow_html=True)
 
-        reporter_df = df_dash[["ผู้แจ้ง", "จำนวน"]].copy()
+        reporter_df = df_dash[["ผู้แจ้ง", "คะแนน"]].copy()
         reporter_df["ผู้แจ้ง"] = reporter_df["ผู้แจ้ง"].astype(str).str.strip()
+        reporter_df["คะแนน"] = pd.to_numeric(reporter_df["คะแนน"], errors="coerce").fillna(0).astype(int)
         reporter_df = reporter_df[reporter_df["ผู้แจ้ง"] != ""]
 
         if reporter_df.empty:
             st.info("ยังไม่มีข้อมูลผู้แจ้ง")
         else:
-            top_qty = (
-                reporter_df.groupby("ผู้แจ้ง")["จำนวน"]
+            top_score = (
+                reporter_df.groupby("ผู้แจ้ง")["คะแนน"]
                 .sum()
                 .reset_index()
-                .rename(columns={"จำนวน": "จำนวนใบ"})
+                .rename(columns={"คะแนน": "คะแนนรวม"})
             )
 
             top_case = reporter_df.groupby("ผู้แจ้ง").size().reset_index(name="จำนวนเคส")
 
-            top = pd.merge(top_qty, top_case, on="ผู้แจ้ง", how="left")
-            top["จำนวนใบ"] = pd.to_numeric(top["จำนวนใบ"], errors="coerce").fillna(0).astype(int)
+            top = pd.merge(top_score, top_case, on="ผู้แจ้ง", how="left")
+            top["คะแนนรวม"] = pd.to_numeric(top["คะแนนรวม"], errors="coerce").fillna(0).astype(int)
             top["จำนวนเคส"] = pd.to_numeric(top["จำนวนเคส"], errors="coerce").fillna(0).astype(int)
-            top = top.nlargest(5, "จำนวนใบ").reset_index(drop=True)
+            top = top.nlargest(5, "คะแนนรวม").reset_index(drop=True)
 
             for i, row in top.iterrows():
                 rank_card(
                     i + 1,
                     str(row["ผู้แจ้ง"]),
-                    int(row["จำนวนใบ"]),
+                    int(row["คะแนนรวม"]),
                     int(row["จำนวนเคส"]),
                 )
 
@@ -948,7 +969,7 @@ with tab_qr:
     st.markdown(
         """
         <div class="help-card">
-        ใช้ QR จุดเดียว เปิดมาเลือกเครื่อง / ปัญหาที่พบ / จำนวน / ความรุนแรง แล้วส่งได้ทันที
+        ใช้ QR จุดเดียว เปิดมาเลือกเครื่อง / ปัญหา / จำนวน / ความรุนแรง แล้วส่งได้ทันที ระบบเก็บคะแนนให้อัตโนมัติ
         </div>
         """,
         unsafe_allow_html=True,
