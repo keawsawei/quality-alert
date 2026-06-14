@@ -6,26 +6,106 @@ import base64
 
 st.set_page_config(page_title="QUALITY ALERT", page_icon="🚨", layout="centered")
 
-APP_VERSION = "V9-CLEAN-MOBILE-2000"
+APP_VERSION = "V10-APP-UI-MACHINE-CATEGORY"
 
 DATA_FILE = Path("quality_alert.xlsx")
 IMG_DIR = Path("images")
 IMG_DIR.mkdir(exist_ok=True)
 
-DEPTS = ["ตอก", "คัด", "กาว", "ขึ้นรูป"]
+MACHINES = [
+    "F115-IBIS",
+    "F84-EVOL",
+    "F84-EVOL2",
+    "F96",
+    "F96/2",
+    "F110",
+    "F130",
+    "4FP96",
+    "ASAHI",
+    "BOBST",
+]
 
-DEPT_ICONS = {
-    "ตอก": "🔨",
-    "คัด": "🔍",
-    "กาว": "🔥",
-    "ขึ้นรูป": "📦",
-}
+PROBLEM_CATEGORIES = [
+    "กระดาษ",
+    "การพิมพ์",
+    "Slot",
+    "Rotary-Diecut",
+    "คัด",
+    "กาว",
+    "ตอก",
+    "อื่นๆ",
+]
+
+AREAS = [
+    "คัด",
+    "กาว",
+    "ตอก",
+    "ขึ้นรูป",
+    "อื่นๆ",
+]
 
 DEFECTS = {
-    "ตอก": ["ตอกหลุด", "ตอกไม่ครบ", "ตอกเบี้ยว", "ตอกผิดตำแหน่ง", "อื่นๆ"],
-    "คัด": ["พิมพ์เลื่อน", "สีผิด", "งานเปื้อน", "งานขาด", "รอยขีดข่วน", "อื่นๆ"],
-    "กาว": ["กาวไม่ติด", "กาวล้น", "กาวเปื้อน", "ประกบเบี้ยว", "อื่นๆ"],
-    "ขึ้นรูป": ["ขึ้นรูปเบี้ยว", "ล็อคไม่เข้า", "แตก/ฉีก", "ขนาดผิด", "อื่นๆ"],
+    "กระดาษ": [
+        "กระดาษยับ",
+        "กระดาษโก่ง",
+        "กระดาษชื้น",
+        "กระดาษแตก",
+        "กระดาษสีผิด",
+        "กระดาษขาด",
+        "อื่นๆ",
+    ],
+    "การพิมพ์": [
+        "พิมพ์เลื่อน",
+        "สีเพี้ยน",
+        "สีจาง",
+        "สีเข้ม",
+        "หมึกเปื้อน",
+        "Register ไม่ตรง",
+        "พิมพ์ไม่ครบ",
+        "อื่นๆ",
+    ],
+    "Slot": [
+        "Slot เบี้ยว",
+        "Slot ลึกเกิน",
+        "Slot ตื้นเกิน",
+        "Slot ขาด",
+        "Slot ไม่ตรงตำแหน่ง",
+        "อื่นๆ",
+    ],
+    "Rotary-Diecut": [
+        "Diecut ไม่ขาด",
+        "Diecut ขาดเกิน",
+        "บากแตก",
+        "บากเบี้ยว",
+        "ล็อคไม่เข้า",
+        "รอยกดไม่ชัด",
+        "อื่นๆ",
+    ],
+    "คัด": [
+        "งานเปื้อน",
+        "งานขาด",
+        "รอยขีดข่วน",
+        "พิมพ์เลื่อน",
+        "คัดปน",
+        "อื่นๆ",
+    ],
+    "กาว": [
+        "กาวไม่ติด",
+        "กาวล้น",
+        "กาวเปื้อน",
+        "ประกบเบี้ยว",
+        "กาวแห้ง",
+        "อื่นๆ",
+    ],
+    "ตอก": [
+        "ตอกหลุด",
+        "ตอกไม่ครบ",
+        "ตอกเบี้ยว",
+        "ตอกผิดตำแหน่ง",
+        "ตอกทะลุ",
+        "อื่นๆ",
+    ],
+    "อื่นๆ": ["อื่นๆ"],
 }
 
 IMPACT_LEVELS = ["คัด", "กาว", "ขึ้นรูป", "ลูกค้า"]
@@ -46,6 +126,9 @@ def load_data():
         "วันที่": "",
         "เวลา": "",
         "ผู้แจ้ง": "",
+        "เครื่อง": "",
+        "หมวดปัญหา": "",
+        "จุดที่พบ": "",
         "หน่วยงาน": "",
         "อาการ": "",
         "จำนวน": 0,
@@ -60,6 +143,16 @@ def load_data():
     for col, default in required_cols.items():
         if col not in df.columns:
             df[col] = default
+
+    # migrate old department data
+    if "หน่วยงาน" in df.columns:
+        df["จุดที่พบ"] = df["จุดที่พบ"].astype(str).replace("nan", "")
+        old_area_mask = df["จุดที่พบ"].astype(str).str.strip() == ""
+        df.loc[old_area_mask, "จุดที่พบ"] = df.loc[old_area_mask, "หน่วยงาน"]
+
+    df["เครื่อง"] = df["เครื่อง"].astype(str).replace("nan", "").replace("", "ไม่ระบุ")
+    df["หมวดปัญหา"] = df["หมวดปัญหา"].astype(str).replace("nan", "").replace("", "อื่นๆ")
+    df["จุดที่พบ"] = df["จุดที่พบ"].astype(str).replace("nan", "").replace("", "อื่นๆ")
 
     df["จำนวน"] = pd.to_numeric(df["จำนวน"], errors="coerce").fillna(0).astype(int)
     df["มูลค่าป้องกัน"] = pd.to_numeric(df["มูลค่าป้องกัน"], errors="coerce").fillna(0)
@@ -97,17 +190,30 @@ def image_to_base64(path):
 def severity_color(severity):
     severity = str(severity).strip()
     if severity == "สูง":
-        return "#ef233c", "สูง"
+        return "#ff2f4d", "สูง"
     if severity == "กลาง":
-        return "#f59e0b", "กลาง"
-    return "#22c55e", "ต่ำ"
+        return "#ffb020", "กลาง"
+    return "#20c767", "ต่ำ"
 
 
-def card_metric(title, value, icon, color):
+def category_icon(cat):
+    return {
+        "กระดาษ": "📄",
+        "การพิมพ์": "🎨",
+        "Slot": "✂️",
+        "Rotary-Diecut": "⚙️",
+        "คัด": "🔍",
+        "กาว": "🔥",
+        "ตอก": "🔨",
+        "อื่นๆ": "📌",
+    }.get(cat, "📌")
+
+
+def metric_card(title, value, icon, color):
     st.markdown(
         f"""
-        <div class="metric-card" style="border-left-color:{color};">
-            <div class="metric-icon" style="background:{color};">{icon}</div>
+        <div class="metric-card" style="--accent:{color};">
+            <div class="metric-icon">{icon}</div>
             <div>
                 <div class="metric-title">{title}</div>
                 <div class="metric-value">{value}</div>
@@ -122,48 +228,47 @@ def latest_card(row):
     date = str(row.get("วันที่", ""))
     time = str(row.get("เวลา", ""))
     reporter = str(row.get("ผู้แจ้ง", ""))
-    dept = str(row.get("หน่วยงาน", ""))
+    machine = str(row.get("เครื่อง", "ไม่ระบุ"))
+    category = str(row.get("หมวดปัญหา", "อื่นๆ"))
+    area = str(row.get("จุดที่พบ", "อื่นๆ"))
     defect = str(row.get("อาการ", ""))
     qty = safe_int(row.get("จำนวน", 0))
     impact = str(row.get("หลุดถึง", ""))
     severity = str(row.get("ระดับ", ""))
     value = safe_int(row.get("มูลค่าป้องกัน", 0))
-    note = str(row.get("รายละเอียด", "")).strip()
     img_path = str(row.get("รูปภาพ", "")).strip()
 
     color, sev_text = severity_color(severity)
     img64 = image_to_base64(img_path)
 
     if img64:
-        img_html = f'<img class="work-img" src="data:image/jpeg;base64,{img64}" />'
+        img_html = f'<img class="thumb" src="data:image/jpeg;base64,{img64}" />'
     else:
-        img_html = f'<div class="work-img empty-img">{DEPT_ICONS.get(dept, "📌")}</div>'
-
-    note_html = ""
-    if note:
-        note_html = f'<div class="item-note">📝 {note}</div>'
+        img_html = f'<div class="thumb empty-thumb">{category_icon(category)}</div>'
 
     st.markdown(
         f"""
-        <div class="item-card">
-            <div class="item-head">
-                <div class="time-badge" style="background:{color};">{time[:5]}</div>
-                <div class="item-main">
-                    <div class="item-title">{defect}</div>
-                    <div class="item-line">{DEPT_ICONS.get(dept, "📌")} {dept} • {qty:,} ใบ • หลุดถึง {impact}</div>
-                    <div class="item-line">👤 {reporter} • {date} • 💰 {value:,} บาท</div>
-                    {note_html}
+        <div class="list-card">
+            <div class="list-bar" style="background:{color};">{time[:5]}</div>
+            <div class="list-content">
+                <div class="list-top">
+                    <div>
+                        <div class="list-title">{defect}</div>
+                        <div class="list-sub">{machine} • {category_icon(category)} {category} • จุด {area}</div>
+                    </div>
+                    <div class="qty-badge">{qty:,} ใบ</div>
                 </div>
-                {img_html}
+                <div class="list-foot">👤 {reporter} • หลุดถึง {impact} • 💰 {value:,} บาท</div>
             </div>
-            <div class="sev-pill" style="background:{color};">ระดับ {sev_text}</div>
+            {img_html}
+            <div class="sev-chip" style="background:{color};">ระดับ {sev_text}</div>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
 
-def rank_card(rank, name, dept, qty, cases):
+def rank_card(rank, name, machine, qty, cases):
     medal = "🥇" if rank == 1 else "🥈" if rank == 2 else "🥉" if rank == 3 else f"#{rank}"
     st.markdown(
         f"""
@@ -172,7 +277,7 @@ def rank_card(rank, name, dept, qty, cases):
             <div class="rank-avatar">👤</div>
             <div class="rank-info">
                 <div class="rank-name">{name}</div>
-                <div class="rank-sub">{DEPT_ICONS.get(dept, "📌")} {dept} • {cases:,} เคส</div>
+                <div class="rank-sub">{machine} • {cases:,} เคส</div>
             </div>
             <div class="rank-score">{qty:,}<span> ใบ</span></div>
         </div>
@@ -181,16 +286,16 @@ def rank_card(rank, name, dept, qty, cases):
     )
 
 
-def defect_card(rank, defect, qty, cases):
+def simple_rank(title, sub, score, color="#ff2f4d", no="1"):
     st.markdown(
         f"""
-        <div class="defect-card">
-            <div class="defect-no">{rank}</div>
-            <div class="defect-info">
-                <div class="defect-name">{defect}</div>
-                <div class="defect-sub">{cases:,} เคส</div>
+        <div class="simple-rank">
+            <div class="simple-no" style="background:{color};">{no}</div>
+            <div>
+                <div class="simple-title">{title}</div>
+                <div class="simple-sub">{sub}</div>
             </div>
-            <div class="defect-score">{qty:,} ใบ</div>
+            <div class="simple-score">{score}</div>
         </div>
         """,
         unsafe_allow_html=True,
@@ -208,9 +313,9 @@ st.markdown(
 
 .stApp {
     background:
-        radial-gradient(circle at top left, rgba(0, 102, 255, .16), transparent 28%),
-        radial-gradient(circle at top right, rgba(239, 35, 60, .13), transparent 30%),
-        linear-gradient(180deg, #f6f9ff 0%, #edf4ff 55%, #ffffff 100%);
+        radial-gradient(circle at top left, rgba(29, 78, 216, .22), transparent 32%),
+        radial-gradient(circle at top right, rgba(255, 47, 77, .16), transparent 32%),
+        linear-gradient(180deg, #f4f8ff 0%, #edf5ff 54%, #ffffff 100%);
 }
 
 #MainMenu, footer, header {
@@ -219,153 +324,153 @@ st.markdown(
 
 .block-container {
     max-width: 760px;
-    padding-top: 1.1rem;
+    padding-top: 1rem;
     padding-bottom: 2rem;
 }
 
-.app-head {
-    background: rgba(255,255,255,.82);
-    border: 1px solid rgba(226,232,240,.95);
-    border-radius: 28px;
-    padding: 18px;
-    box-shadow: 0 18px 46px rgba(15,23,42,.10);
-    backdrop-filter: blur(16px);
-    margin-bottom: 14px;
+.app-frame {
+    background: rgba(255, 255, 255, .78);
+    border: 1px solid rgba(255,255,255,.95);
+    border-radius: 32px;
+    padding: 16px;
+    box-shadow: 0 28px 70px rgba(15, 23, 42, .14);
+    backdrop-filter: blur(18px);
 }
 
-.brand-row {
+.hero {
     display: flex;
     align-items: center;
     gap: 14px;
+    margin-bottom: 14px;
 }
 
 .logo {
     width: 68px;
     height: 68px;
-    border-radius: 22px;
+    border-radius: 24px;
+    background: linear-gradient(145deg, #ff3154, #e11d48);
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(145deg, #ff3154, #e11d48);
     color: white;
     font-size: 38px;
-    box-shadow: inset 0 3px 0 rgba(255,255,255,.28), 0 14px 32px rgba(225,29,72,.28);
+    box-shadow: inset 0 4px 0 rgba(255,255,255,.25), 0 18px 38px rgba(225, 29, 72, .30);
 }
 
 .brand-title {
-    font-size: 43px;
-    font-weight: 1000;
+    font-size: 41px;
     line-height: .92;
+    font-weight: 1000;
     color: #071f52;
     letter-spacing: -1.5px;
 }
 
 .brand-title span {
-    color: #ef233c;
+    color: #ff2f4d;
 }
 
 .brand-sub {
-    font-size: 16px;
-    font-weight: 900;
-    color: #243b63;
     margin-top: 6px;
+    font-size: 15px;
+    font-weight: 900;
+    color: #263b60;
 }
 
-.step-row {
+.top-actions {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 9px;
-    margin-top: 15px;
 }
 
-.step {
+.action {
     background: linear-gradient(180deg, #ffffff, #f7fbff);
     border: 1px solid #dbeafe;
-    border-radius: 18px;
-    padding: 10px 6px;
+    border-radius: 19px;
     text-align: center;
-    color: #0f172a;
-    box-shadow: 0 8px 18px rgba(15,23,42,.05);
+    padding: 10px 5px;
+    box-shadow: 0 10px 22px rgba(15,23,42,.055);
 }
 
-.step-icon {
+.action-icon {
     width: 42px;
     height: 42px;
+    margin: 0 auto 6px auto;
     border-radius: 999px;
-    margin: 0 auto 5px auto;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #eff6ff;
-    border: 1px solid #bfdbfe;
     font-size: 22px;
 }
 
-.step-text {
+.action-text {
+    color: #0f172a;
     font-size: 13px;
     font-weight: 1000;
 }
 
-div[data-testid="stTabs"] button {
-    font-size: 17px;
-    font-weight: 1000;
-}
-
 div[data-testid="stTabs"] [data-baseweb="tab-list"] {
-    gap: 8px;
+    gap: 7px;
+    margin-top: 14px;
 }
 
 div[data-testid="stTabs"] [data-baseweb="tab"] {
-    background: rgba(255,255,255,.88);
+    background: rgba(255,255,255,.86);
     border: 1px solid #dbeafe;
-    border-radius: 18px;
-    padding: 9px 14px;
-    box-shadow: 0 7px 16px rgba(15,23,42,.05);
+    border-radius: 999px;
+    padding: 8px 11px;
+    box-shadow: 0 8px 17px rgba(15,23,42,.05);
 }
 
-.form-shell {
-    background: rgba(255,255,255,.92);
-    border: 1px solid #e5e7eb;
+div[data-testid="stTabs"] button {
+    font-size: 15px;
+    font-weight: 1000;
+}
+
+.form-phone {
+    background: #ffffff;
     border-radius: 30px;
     overflow: hidden;
-    box-shadow: 0 20px 50px rgba(15,23,42,.12);
     margin-top: 12px;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 24px 55px rgba(15,23,42,.13);
 }
 
-.form-top {
-    background: linear-gradient(135deg, #ef233c, #dc2626);
+.phone-top {
+    background: linear-gradient(135deg, #ff2f4d, #d91f3d);
+    padding: 18px;
     color: white;
-    padding: 17px 18px;
     display: flex;
-    align-items: center;
     gap: 12px;
+    align-items: center;
 }
 
-.form-top-icon {
+.phone-icon {
     width: 48px;
     height: 48px;
-    border-radius: 16px;
-    background: rgba(255,255,255,.18);
+    border-radius: 17px;
+    background: rgba(255,255,255,.20);
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 28px;
 }
 
-.form-top-title {
+.phone-title {
     font-size: 24px;
-    font-weight: 1000;
     line-height: 1.1;
+    font-weight: 1000;
 }
 
-.form-top-sub {
+.phone-sub {
     font-size: 13px;
     font-weight: 800;
-    opacity: .92;
+    opacity: .94;
 }
 
 .form-body {
-    padding: 16px 16px 4px 16px;
+    padding: 16px 16px 5px 16px;
 }
 
 label {
@@ -383,17 +488,6 @@ label {
     min-height: 46px;
 }
 
-.stTextInput input:focus,
-.stNumberInput input:focus,
-.stTextArea textarea:focus {
-    border-color: #2563eb !important;
-    box-shadow: 0 0 0 3px rgba(37,99,235,.10) !important;
-}
-
-.stTextArea textarea {
-    min-height: 72px !important;
-}
-
 .stRadio > div {
     background: #f8fafc;
     border: 1px solid #e5e7eb;
@@ -405,23 +499,22 @@ div[data-testid="stExpander"] {
     border-radius: 18px !important;
     border: 1px dashed #93c5fd !important;
     background: linear-gradient(180deg, #ffffff, #f8fbff) !important;
-    box-shadow: 0 8px 18px rgba(15,23,42,.04);
 }
 
 .stFormSubmitButton > button {
-    background: linear-gradient(135deg, #ef233c, #dc2626 70%, #b91c1c) !important;
+    background: linear-gradient(135deg, #ff3154, #dc2626 75%, #b91c1c) !important;
     color: white !important;
     height: 62px;
     border-radius: 18px !important;
     font-size: 22px !important;
     font-weight: 1000 !important;
     border: 0 !important;
-    box-shadow: 0 16px 34px rgba(239,35,60,.30);
+    box-shadow: 0 16px 36px rgba(239,35,60,.32);
     margin-top: 8px;
 }
 
 .success-card {
-    background: #ffffff;
+    background: white;
     border: 1px solid #bbf7d0;
     border-radius: 28px;
     padding: 22px 17px;
@@ -479,15 +572,94 @@ div[data-testid="stExpander"] {
 
 .success-value {
     color: #16a34a;
-    font-size: 25px;
+    font-size: 24px;
     font-weight: 1000;
 }
 
 .section-title {
-    font-size: 25px;
+    font-size: 24px;
     font-weight: 1000;
     color: #0f172a;
     margin: 18px 0 12px 0;
+}
+
+.list-card {
+    position: relative;
+    display: grid;
+    grid-template-columns: 58px 1fr 72px;
+    gap: 10px;
+    align-items: center;
+    background: rgba(255,255,255,.94);
+    border: 1px solid #e5e7eb;
+    border-radius: 22px;
+    padding: 11px;
+    box-shadow: 0 13px 31px rgba(15,23,42,.075);
+    margin-bottom: 10px;
+}
+
+.list-bar {
+    min-height: 82px;
+    color: white;
+    border-radius: 16px;
+    font-size: 14px;
+    font-weight: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.list-top {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.list-title {
+    color: #111827;
+    font-size: 18px;
+    font-weight: 1000;
+}
+
+.list-sub,
+.list-foot {
+    color: #475569;
+    font-size: 13px;
+    font-weight: 800;
+    margin-top: 3px;
+}
+
+.qty-badge {
+    color: #16a34a;
+    font-size: 16px;
+    font-weight: 1000;
+    white-space: nowrap;
+}
+
+.thumb {
+    width: 66px;
+    height: 66px;
+    border-radius: 16px;
+    object-fit: cover;
+    border: 1px solid #e5e7eb;
+}
+
+.empty-thumb {
+    background: linear-gradient(180deg, #f8fafc, #eef2ff);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 30px;
+}
+
+.sev-chip {
+    position: absolute;
+    right: 12px;
+    top: 7px;
+    color: white;
+    border-radius: 999px;
+    padding: 3px 8px;
+    font-size: 11px;
+    font-weight: 1000;
 }
 
 .metric-grid {
@@ -497,27 +669,28 @@ div[data-testid="stExpander"] {
 }
 
 .metric-card {
-    background: rgba(255,255,255,.92);
+    background: rgba(255,255,255,.94);
     border: 1px solid #e5e7eb;
-    border-left: 7px solid;
+    border-left: 7px solid var(--accent);
     border-radius: 22px;
-    padding: 15px;
+    padding: 14px;
     display: flex;
-    gap: 12px;
+    gap: 11px;
     align-items: center;
-    box-shadow: 0 12px 30px rgba(15,23,42,.07);
+    box-shadow: 0 13px 31px rgba(15,23,42,.075);
 }
 
 .metric-icon {
-    min-width: 50px;
-    width: 50px;
-    height: 50px;
-    border-radius: 17px;
+    min-width: 48px;
+    width: 48px;
+    height: 48px;
+    border-radius: 16px;
+    background: var(--accent);
     color: white;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 27px;
+    font-size: 26px;
 }
 
 .metric-title {
@@ -528,113 +701,30 @@ div[data-testid="stExpander"] {
 
 .metric-value {
     color: #0f172a;
-    font-size: 25px;
+    font-size: 23px;
     font-weight: 1000;
-    line-height: 1.05;
+    line-height: 1.08;
     margin-top: 4px;
 }
 
-.item-card {
-    position: relative;
-    background: rgba(255,255,255,.92);
-    border: 1px solid #e5e7eb;
-    border-radius: 22px;
-    padding: 12px;
-    box-shadow: 0 12px 30px rgba(15,23,42,.07);
-    margin-bottom: 10px;
-}
-
-.item-head {
-    display: grid;
-    grid-template-columns: 58px 1fr 74px;
-    gap: 10px;
-    align-items: center;
-}
-
-.time-badge {
-    min-height: 78px;
-    color: white;
-    border-radius: 16px;
-    font-size: 14px;
-    font-weight: 1000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.item-title {
-    color: #111827;
-    font-size: 19px;
-    font-weight: 1000;
-}
-
-.item-line {
-    color: #475569;
-    font-size: 13px;
-    font-weight: 800;
-    margin-top: 3px;
-}
-
-.item-note {
-    color: #334155;
-    background: #f8fafc;
-    border-radius: 11px;
-    padding: 5px 7px;
-    font-size: 12px;
-    font-weight: 750;
-    margin-top: 5px;
-}
-
-.work-img {
-    width: 68px;
-    height: 68px;
-    border-radius: 16px;
-    object-fit: cover;
-    border: 1px solid #e5e7eb;
-}
-
-.empty-img {
-    background: linear-gradient(180deg, #f8fafc, #eef2ff);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 31px;
-}
-
-.sev-pill {
-    position: absolute;
-    right: 12px;
-    top: 8px;
-    color: white;
-    border-radius: 999px;
-    padding: 3px 9px;
-    font-size: 11px;
-    font-weight: 1000;
-}
-
 .rank-card,
-.defect-card {
-    background: rgba(255,255,255,.92);
+.simple-rank {
+    background: rgba(255,255,255,.94);
     border: 1px solid #e5e7eb;
     border-radius: 22px;
     padding: 13px;
     display: grid;
     align-items: center;
     gap: 10px;
-    box-shadow: 0 12px 30px rgba(15,23,42,.07);
+    box-shadow: 0 13px 31px rgba(15,23,42,.075);
     margin-bottom: 10px;
 }
 
 .rank-card {
-    grid-template-columns: 48px 44px 1fr auto;
+    grid-template-columns: 48px 42px 1fr auto;
 }
 
-.defect-card {
-    grid-template-columns: 48px 1fr auto;
-}
-
-.rank-medal,
-.defect-no {
+.rank-medal {
     width: 43px;
     height: 43px;
     border-radius: 999px;
@@ -659,22 +749,23 @@ div[data-testid="stExpander"] {
 }
 
 .rank-name,
-.defect-name {
+.simple-title {
     color: #111827;
     font-size: 16px;
     font-weight: 1000;
 }
 
 .rank-sub,
-.defect-sub {
+.simple-sub {
     color: #64748b;
     font-size: 12px;
     font-weight: 800;
 }
 
-.rank-score {
+.rank-score,
+.simple-score {
     color: #16a34a;
-    font-size: 21px;
+    font-size: 20px;
     font-weight: 1000;
     text-align: right;
 }
@@ -684,27 +775,28 @@ div[data-testid="stExpander"] {
     font-size: 12px;
 }
 
-.defect-score {
-    color: #ef233c;
-    font-size: 18px;
+.simple-rank {
+    grid-template-columns: 44px 1fr auto;
+}
+
+.simple-no {
+    color: white;
+    width: 38px;
+    height: 38px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     font-weight: 1000;
-    text-align: right;
 }
 
 .qr-box {
-    background: rgba(255,255,255,.92);
+    background: rgba(255,255,255,.94);
     border: 1px solid #dbeafe;
     border-radius: 24px;
     padding: 15px;
-    box-shadow: 0 12px 30px rgba(15,23,42,.06);
-    margin-top: 14px;
-}
-
-.qr-title {
-    color: #0f172a;
-    font-size: 19px;
-    font-weight: 1000;
-    margin-bottom: 6px;
+    box-shadow: 0 13px 31px rgba(15,23,42,.075);
+    margin-top: 12px;
 }
 
 .help-card {
@@ -719,83 +811,55 @@ div[data-testid="stExpander"] {
 }
 
 @media (max-width: 640px) {
-    .brand-title {
-        font-size: 34px;
-    }
-
-    .logo {
-        width: 58px;
-        height: 58px;
-        font-size: 32px;
-    }
-
-    .step-row {
-        grid-template-columns: 1fr 1fr;
-    }
-
-    .metric-grid,
-    .success-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .item-head {
-        grid-template-columns: 54px 1fr 62px;
-    }
-
-    .work-img {
-        width: 58px;
-        height: 58px;
-    }
-
-    .rank-card {
-        grid-template-columns: 43px 38px 1fr;
-    }
-
-    .rank-score {
-        grid-column: 3;
-        text-align: left;
-    }
+    .brand-title { font-size: 34px; }
+    .logo { width: 58px; height: 58px; font-size: 32px; }
+    .top-actions { grid-template-columns: 1fr 1fr; }
+    .metric-grid, .success-grid { grid-template-columns: 1fr; }
+    .list-card { grid-template-columns: 54px 1fr 62px; }
+    .thumb { width: 58px; height: 58px; }
+    .rank-card { grid-template-columns: 43px 38px 1fr; }
+    .rank-score { grid-column: 3; text-align: left; }
 }
 </style>
 """,
     unsafe_allow_html=True,
 )
 
+st.markdown('<div class="app-frame">', unsafe_allow_html=True)
 st.markdown(
     f"""
-<div class="app-head">
     <div style="color:#94a3b8;font-size:12px;font-weight:900;margin-bottom:8px;">{APP_VERSION}</div>
-    <div class="brand-row">
+    <div class="hero">
         <div class="logo">🚨</div>
         <div>
             <div class="brand-title">QUALITY <span>ALERT</span></div>
             <div class="brand-sub">ทุกคนคือ QA ป้องกันก่อนเสีย ส่งก่อนรอด</div>
         </div>
     </div>
-    <div class="step-row">
-        <div class="step"><div class="step-icon">📷</div><div class="step-text">ถ่ายรูป</div></div>
-        <div class="step"><div class="step-icon">💬</div><div class="step-text">บอกอาการ</div></div>
-        <div class="step"><div class="step-icon">#</div><div class="step-text">ใส่จำนวน</div></div>
-        <div class="step"><div class="step-icon">📨</div><div class="step-text">ส่งแจ้งเตือน</div></div>
+    <div class="top-actions">
+        <div class="action"><div class="action-icon">🏭</div><div class="action-text">เลือกเครื่อง</div></div>
+        <div class="action"><div class="action-icon">📂</div><div class="action-text">หมวดปัญหา</div></div>
+        <div class="action"><div class="action-icon">🔍</div><div class="action-text">อาการ</div></div>
+        <div class="action"><div class="action-icon">📨</div><div class="action-text">ส่งแจ้งเตือน</div></div>
     </div>
-</div>
-""",
+    """,
     unsafe_allow_html=True,
 )
+st.markdown('</div>', unsafe_allow_html=True)
 
 tab_alert, tab_latest, tab_dashboard, tab_qr = st.tabs(
-    ["🚨 แจ้งปัญหา", "📋 รายการล่าสุด", "📊 Dashboard", "🔗 QR"]
+    ["🚨 แจ้งปัญหา", "📋 ล่าสุด", "📊 Dashboard", "🔗 QR"]
 )
 
 with tab_alert:
-    st.markdown('<div class="form-shell">', unsafe_allow_html=True)
+    st.markdown('<div class="form-phone">', unsafe_allow_html=True)
     st.markdown(
         """
-        <div class="form-top">
-            <div class="form-top-icon">🚨</div>
+        <div class="phone-top">
+            <div class="phone-icon">🚨</div>
             <div>
-                <div class="form-top-title">แจ้งเตือนปัญหาคุณภาพ</div>
-                <div class="form-top-sub">กรอกง่าย ใช้งานจริง ทุกปุ่มกดได้</div>
+                <div class="phone-title">แจ้งเตือนปัญหาคุณภาพ</div>
+                <div class="phone-sub">เลือกเครื่อง → หมวดปัญหา → อาการ → ส่ง</div>
             </div>
         </div>
         """,
@@ -807,9 +871,13 @@ with tab_alert:
 
         reporter = st.text_input("👤 ผู้แจ้ง", placeholder="ใส่ชื่อผู้แจ้ง")
 
-        department = st.selectbox("🏭 หน่วยงาน", DEPTS, index=0)
+        machine = st.selectbox("🏭 เครื่อง", MACHINES, index=0)
 
-        defect = st.selectbox("🔍 อาการที่พบ", DEFECTS[department])
+        category = st.selectbox("📂 หมวดปัญหา", PROBLEM_CATEGORIES, index=0)
+
+        area = st.selectbox("📍 จุดที่พบ", AREAS, index=0)
+
+        defect = st.selectbox("🔍 อาการที่พบ", DEFECTS[category])
 
         qty = st.number_input("🔢 จำนวนที่พบ / ใบ", min_value=1, step=1)
 
@@ -833,7 +901,6 @@ with tab_alert:
             )
 
         submitted = st.form_submit_button("🚨 ส่งแจ้งเตือน")
-
         st.markdown('</div>', unsafe_allow_html=True)
 
     st.markdown('</div>', unsafe_allow_html=True)
@@ -849,7 +916,7 @@ with tab_alert:
         final_image = image if image is not None else upload_image
 
         if final_image is not None:
-            img_name = f"{now.strftime('%Y%m%d_%H%M%S')}_{department}.jpg"
+            img_name = f"{now.strftime('%Y%m%d_%H%M%S')}_{machine}.jpg"
             img_path = IMG_DIR / img_name
             with open(img_path, "wb") as f:
                 f.write(final_image.getbuffer())
@@ -860,7 +927,10 @@ with tab_alert:
             "วันที่": now.strftime("%d/%m/%Y"),
             "เวลา": now.strftime("%H:%M:%S"),
             "ผู้แจ้ง": reporter.strip(),
-            "หน่วยงาน": department,
+            "เครื่อง": machine,
+            "หมวดปัญหา": category,
+            "จุดที่พบ": area,
+            "หน่วยงาน": area,
             "อาการ": defect,
             "จำนวน": int(qty),
             "หลุดถึง": impact,
@@ -897,23 +967,23 @@ with tab_alert:
             <div class="success-card">
                 <div class="success-check">✓</div>
                 <div class="success-title">แจ้งเตือนสำเร็จ!</div>
-                <div class="success-sub">ขอบคุณที่ช่วยป้องกันงานเสียก่อนส่งต่อ</div>
+                <div class="success-sub">บันทึกข้อมูลแล้ว ขอบคุณที่ช่วยป้องกันงานเสีย</div>
                 <div class="success-grid">
+                    <div class="success-box">
+                        <div class="success-label">เครื่อง</div>
+                        <div class="success-value">{machine}</div>
+                    </div>
+                    <div class="success-box">
+                        <div class="success-label">หมวดปัญหา</div>
+                        <div class="success-value">{category_icon(category)} {category}</div>
+                    </div>
                     <div class="success-box">
                         <div class="success-label">ป้องกันได้</div>
                         <div class="success-value">{int(qty):,} ใบ</div>
                     </div>
                     <div class="success-box">
-                        <div class="success-label">มูลค่าป้องกัน</div>
-                        <div class="success-value">{damage_value:,.0f} บาท</div>
-                    </div>
-                    <div class="success-box">
                         <div class="success-label">อันดับของคุณ</div>
                         <div class="success-value">{rank_text}</div>
-                    </div>
-                    <div class="success-box">
-                        <div class="success-label">หน่วยงาน</div>
-                        <div class="success-value">{DEPT_ICONS.get(department, "📌")} {department}</div>
                     </div>
                 </div>
             </div>
@@ -942,9 +1012,7 @@ with tab_dashboard:
     else:
         df_dash = df.copy()
         df_dash["จำนวน"] = pd.to_numeric(df_dash["จำนวน"], errors="coerce").fillna(0).astype(int)
-        df_dash["มูลค่าป้องกัน"] = pd.to_numeric(
-            df_dash["มูลค่าป้องกัน"], errors="coerce"
-        ).fillna(0)
+        df_dash["มูลค่าป้องกัน"] = pd.to_numeric(df_dash["มูลค่าป้องกัน"], errors="coerce").fillna(0)
 
         total_cases = len(df_dash)
         total_qty = int(df_dash["จำนวน"].sum())
@@ -959,15 +1027,37 @@ with tab_dashboard:
         )
 
         st.markdown('<div class="metric-grid">', unsafe_allow_html=True)
-        card_metric("แจ้งทั้งหมด", f"{total_cases:,} เคส", "🔔", "#ef233c")
-        card_metric("ป้องกันได้", f"{total_qty:,} ใบ", "🛡️", "#22c55e")
-        card_metric("ผู้มีส่วนร่วม", f"{total_reporters:,} คน", "👥", "#2563eb")
-        card_metric("มูลค่าป้องกัน", f"{total_value:,} บาท", "💰", "#f59e0b")
+        metric_card("แจ้งทั้งหมด", f"{total_cases:,} เคส", "🔔", "#ff2f4d")
+        metric_card("ป้องกันได้", f"{total_qty:,} ใบ", "🛡️", "#20c767")
+        metric_card("ผู้มีส่วนร่วม", f"{total_reporters:,} คน", "👥", "#2563eb")
+        metric_card("มูลค่าป้องกัน", f"{total_value:,} บาท", "💰", "#ffb020")
         st.markdown('</div>', unsafe_allow_html=True)
+
+        st.markdown('<div class="section-title">🏭 Top เครื่องที่พบปัญหา</div>', unsafe_allow_html=True)
+        machine_df = df_dash[["เครื่อง", "จำนวน"]].copy()
+        machine_df["เครื่อง"] = machine_df["เครื่อง"].astype(str).str.strip().replace("", "ไม่ระบุ")
+        machine_qty = machine_df.groupby("เครื่อง")["จำนวน"].sum().reset_index().rename(columns={"จำนวน": "จำนวนใบ"})
+        machine_case = machine_df.groupby("เครื่อง").size().reset_index(name="จำนวนเคส")
+        machine_top = pd.merge(machine_qty, machine_case, on="เครื่อง", how="left")
+        machine_top["จำนวนใบ"] = pd.to_numeric(machine_top["จำนวนใบ"], errors="coerce").fillna(0).astype(int)
+        machine_top = machine_top.nlargest(5, "จำนวนใบ").reset_index(drop=True)
+        for i, row in machine_top.iterrows():
+            simple_rank(str(row["เครื่อง"]), f"{int(row['จำนวนเคส']):,} เคส", f"{int(row['จำนวนใบ']):,} ใบ", "#2563eb", str(i + 1))
+
+        st.markdown('<div class="section-title">📂 Top หมวดปัญหา</div>', unsafe_allow_html=True)
+        cat_df = df_dash[["หมวดปัญหา", "จำนวน"]].copy()
+        cat_df["หมวดปัญหา"] = cat_df["หมวดปัญหา"].astype(str).str.strip().replace("", "อื่นๆ")
+        cat_qty = cat_df.groupby("หมวดปัญหา")["จำนวน"].sum().reset_index().rename(columns={"จำนวน": "จำนวนใบ"})
+        cat_case = cat_df.groupby("หมวดปัญหา").size().reset_index(name="จำนวนเคส")
+        cat_top = pd.merge(cat_qty, cat_case, on="หมวดปัญหา", how="left")
+        cat_top["จำนวนใบ"] = pd.to_numeric(cat_top["จำนวนใบ"], errors="coerce").fillna(0).astype(int)
+        cat_top = cat_top.nlargest(5, "จำนวนใบ").reset_index(drop=True)
+        for i, row in cat_top.iterrows():
+            simple_rank(f"{category_icon(row['หมวดปัญหา'])} {row['หมวดปัญหา']}", f"{int(row['จำนวนเคส']):,} เคส", f"{int(row['จำนวนใบ']):,} ใบ", "#ff2f4d", str(i + 1))
 
         st.markdown('<div class="section-title">🏆 Top 5 ผู้มีส่วนร่วม</div>', unsafe_allow_html=True)
 
-        reporter_df = df_dash[["ผู้แจ้ง", "หน่วยงาน", "จำนวน"]].copy()
+        reporter_df = df_dash[["ผู้แจ้ง", "เครื่อง", "จำนวน"]].copy()
         reporter_df["ผู้แจ้ง"] = reporter_df["ผู้แจ้ง"].astype(str).str.strip()
         reporter_df = reporter_df[reporter_df["ผู้แจ้ง"] != ""]
 
@@ -983,14 +1073,14 @@ with tab_dashboard:
 
             top_case = reporter_df.groupby("ผู้แจ้ง").size().reset_index(name="จำนวนเคส")
 
-            top_dept = (
-                reporter_df.groupby("ผู้แจ้ง")["หน่วยงาน"]
+            top_machine = (
+                reporter_df.groupby("ผู้แจ้ง")["เครื่อง"]
                 .agg(lambda x: str(x.dropna().iloc[-1]) if len(x.dropna()) else "")
                 .reset_index()
             )
 
             top = pd.merge(top_qty, top_case, on="ผู้แจ้ง", how="left")
-            top = pd.merge(top, top_dept, on="ผู้แจ้ง", how="left")
+            top = pd.merge(top, top_machine, on="ผู้แจ้ง", how="left")
             top["จำนวนใบ"] = pd.to_numeric(top["จำนวนใบ"], errors="coerce").fillna(0).astype(int)
             top["จำนวนเคส"] = pd.to_numeric(top["จำนวนเคส"], errors="coerce").fillna(0).astype(int)
             top = top.nlargest(5, "จำนวนใบ").reset_index(drop=True)
@@ -999,59 +1089,20 @@ with tab_dashboard:
                 rank_card(
                     i + 1,
                     str(row["ผู้แจ้ง"]),
-                    str(row.get("หน่วยงาน", "")),
-                    int(row["จำนวนใบ"]),
-                    int(row["จำนวนเคส"]),
-                )
-
-        st.markdown('<div class="section-title">🔍 Top อาการ</div>', unsafe_allow_html=True)
-
-        defect_df = df_dash[["อาการ", "จำนวน"]].copy()
-        defect_df["อาการ"] = defect_df["อาการ"].astype(str).str.strip()
-        defect_df = defect_df[defect_df["อาการ"] != ""]
-
-        if defect_df.empty:
-            st.info("ยังไม่มีข้อมูลอาการ")
-        else:
-            top_defect_qty = (
-                defect_df.groupby("อาการ")["จำนวน"]
-                .sum()
-                .reset_index()
-                .rename(columns={"จำนวน": "จำนวนใบ"})
-            )
-
-            top_defect_case = (
-                defect_df.groupby("อาการ")
-                .size()
-                .reset_index(name="จำนวนเคส")
-            )
-
-            top_defect = pd.merge(top_defect_qty, top_defect_case, on="อาการ", how="left")
-            top_defect["จำนวนใบ"] = pd.to_numeric(
-                top_defect["จำนวนใบ"], errors="coerce"
-            ).fillna(0).astype(int)
-            top_defect["จำนวนเคส"] = pd.to_numeric(
-                top_defect["จำนวนเคส"], errors="coerce"
-            ).fillna(0).astype(int)
-            top_defect = top_defect.nlargest(5, "จำนวนใบ").reset_index(drop=True)
-
-            for i, row in top_defect.iterrows():
-                defect_card(
-                    i + 1,
-                    str(row["อาการ"]),
+                    str(row.get("เครื่อง", "")),
                     int(row["จำนวนใบ"]),
                     int(row["จำนวนเคส"]),
                 )
 
 with tab_qr:
     st.markdown('<div class="qr-box">', unsafe_allow_html=True)
-    st.markdown('<div class="qr-title">🔗 ลิงก์สำหรับทำ QR จุดเดียว</div>', unsafe_allow_html=True)
+    st.markdown('<div style="font-size:20px;font-weight:1000;color:#0f172a;margin-bottom:8px;">🔗 ลิงก์สำหรับทำ QR จุดเดียว</div>', unsafe_allow_html=True)
     base_url = "https://quality-alert-9j5j2cx7n5ddb6qsr7wd3j.streamlit.app"
     st.code(base_url)
     st.markdown(
         """
         <div class="help-card">
-        ใช้ QR จุดเดียวพอ แล้วให้พนักงานเลือกหน่วยงานจาก Dropdown ในหน้าแจ้งปัญหา
+        ใช้ QR จุดเดียว เปิดมาเลือกเครื่อง / หมวดปัญหา / จุดที่พบ จาก Dropdown ได้เลย
         </div>
         """,
         unsafe_allow_html=True,
