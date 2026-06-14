@@ -5,7 +5,7 @@ from pathlib import Path
 
 st.set_page_config(page_title="QUALITY ALERT", page_icon="🚨", layout="centered")
 
-APP_VERSION = "V4-CLEAN-DASHBOARD"
+APP_VERSION = "V5-HIDE-CAMERA"
 
 DATA_FILE = Path("quality_alert.xlsx")
 IMG_DIR = Path("images")
@@ -264,6 +264,11 @@ st.markdown(
     font-size: 13px;
     font-weight: 900;
 }
+div[data-testid="stExpander"] {
+    border-radius: 16px;
+    border: 1px solid #dbeafe;
+    background: #f8fbff;
+}
 hr {
     margin-top: 28px;
     margin-bottom: 28px;
@@ -284,11 +289,6 @@ with st.form("alert_form", clear_on_submit=True):
     department = dept_qr
     st.caption(f"ระบบเลือกหน่วยงานจาก QR อัตโนมัติ: {department}")
 
-    image = st.camera_input("📷 ถ่ายรูปหน้างาน")
-
-    if image is None:
-        image = st.file_uploader("หรือแนบรูปจากเครื่อง", type=["jpg", "jpeg", "png"])
-
     defect = st.selectbox("🔍 อาการที่พบ", DEFECTS[department])
 
     qty = st.number_input("🔢 จำนวนที่พบ / ใบ", min_value=1, step=1)
@@ -302,7 +302,17 @@ with st.form("alert_form", clear_on_submit=True):
         placeholder="เช่น จุดที่พบ / สาเหตุเบื้องต้น / วิธีป้องกัน",
     )
 
-    submitted = st.form_submit_button("🚨 แจ้งปัญหาทันที")
+    image = None
+    upload_image = None
+
+    with st.expander("📷 เพิ่มรูปภาพ / ถ่ายภาพประกอบ (ไม่บังคับ)", expanded=False):
+        image = st.camera_input("📷 ถ่ายภาพ")
+        upload_image = st.file_uploader(
+            "หรือเลือกภาพจากเครื่อง",
+            type=["jpg", "jpeg", "png"],
+        )
+
+    submitted = st.form_submit_button("🚨 ส่งแจ้งเตือน")
 
 
 if submitted:
@@ -313,11 +323,13 @@ if submitted:
     now = datetime.now()
     img_path = ""
 
-    if image is not None:
+    final_image = image if image is not None else upload_image
+
+    if final_image is not None:
         img_name = f"{now.strftime('%Y%m%d_%H%M%S')}_{department}.jpg"
         img_path = IMG_DIR / img_name
         with open(img_path, "wb") as f:
-            f.write(image.getbuffer())
+            f.write(final_image.getbuffer())
 
     damage_value = int(qty) * COST_PER_SHEET
 
