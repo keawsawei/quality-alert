@@ -9,7 +9,7 @@ from io import StringIO
 
 st.set_page_config(page_title="QUALITY ALERT", page_icon="🚨", layout="centered")
 
-APP_VERSION = "V18-FIX-THAI-UPLOAD-UI"
+APP_VERSION = "V19-FIX-DETAIL-CAMERA-UI"
 
 SHEET_ID = "1cCKqj56MBas_v5c2dR1ryCNa9c4YulxtsKPbsz-7PUY"
 SHEET_GID = "0"
@@ -777,6 +777,31 @@ div[data-testid="stExpander"] {
     margin-top: 12px;
 }
 
+.mini-label {
+    color: #0f172a;
+    font-size: 15px;
+    font-weight: 1000;
+    margin: 10px 0 7px 2px;
+}
+
+div[data-testid="stFileUploader"] section {
+    background: #f8fafc !important;
+    border: 1px solid #dbeafe !important;
+    border-radius: 18px !important;
+    padding: 10px !important;
+}
+
+div[data-testid="stFileUploader"] button {
+    border-radius: 999px !important;
+    font-weight: 1000 !important;
+}
+
+textarea {
+    background: #f8fafc !important;
+    border: 1px solid #dbeafe !important;
+    border-radius: 16px !important;
+}
+
 @media (max-width: 640px) {
     .title {
         font-size: 34px;
@@ -847,23 +872,26 @@ with tab_alert:
 
         problem_select = st.selectbox("🔍 ปัญหาที่พบ", PROBLEMS, index=0)
 
-        custom_problem = ""
-        if problem_select == "อื่นๆ (พิมพ์เพิ่มเติมได้)":
-            custom_problem = st.text_input("✍️ ระบุปัญหา", placeholder="พิมพ์ปัญหาที่พบเพิ่มเติม")
+        detail_problem = st.text_area(
+            "✍️ อาการของเสียเพิ่มเติม",
+            placeholder="เช่น ตอกเบี้ยว / ลวดตอกหัก, งอ / จุดอื่นๆ พิมพ์เพิ่มได้",
+            height=92,
+        )
 
         qty = st.number_input("🔢 จำนวนที่พบ / ใบ", min_value=1, step=1)
 
         severity = st.radio("🚦 ความรุนแรง", SEVERITY_LIST, horizontal=True)
 
+        st.markdown('<div class="mini-label">📁 อัปโหลดภาพ (ไม่บังคับ)</div>', unsafe_allow_html=True)
         upload_image = st.file_uploader(
-            "📁 อัปโหลดภาพจากเครื่อง/จุดงาน (ไม่บังคับ)",
+            "อัปโหลดภาพ",
             type=["jpg", "jpeg", "png"],
-            help="เลือกไฟล์ JPG หรือ PNG ได้เลย ปุ่มนี้แสดงไว้ด้านบนเสมอ",
+            label_visibility="collapsed",
         )
 
         image = None
-        with st.expander("📷 ถ่ายภาพจากกล้อง (ซ่อนไว้ กดเปิดเมื่อต้องการ)", expanded=False):
-            image = st.camera_input("📷 เปิดกล้องถ่ายภาพ")
+        with st.expander("📷 ถ่ายภาพ", expanded=False):
+            image = st.camera_input("ถ่ายภาพ", label_visibility="collapsed")
 
         submitted = st.form_submit_button("🚨 ส่งแจ้งเตือน")
         st.markdown('</div>', unsafe_allow_html=True)
@@ -875,9 +903,15 @@ with tab_alert:
             st.error("กรุณาใส่ชื่อผู้แจ้ง")
             st.stop()
 
-        problem = custom_problem.strip() if problem_select == "อื่นๆ (พิมพ์เพิ่มเติมได้)" else problem_select
+        detail_problem = detail_problem.strip()
+        if problem_select == "อื่นๆ (พิมพ์เพิ่มเติมได้)":
+            problem = detail_problem
+        else:
+            problem = problem_select
+            if detail_problem:
+                problem = f"{problem_select} / {detail_problem}"
 
-        if not problem:
+        if not problem.strip():
             st.error("กรุณาระบุปัญหาที่พบ")
             st.stop()
 
