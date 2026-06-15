@@ -9,7 +9,7 @@ from io import StringIO
 
 st.set_page_config(page_title="QUALITY ALERT", page_icon="🚨", layout="centered")
 
-APP_VERSION = "V20-NO-CAMERA-UPLOAD-DETAIL-UI"
+APP_VERSION = "แจ้งง่าย เห็นเร็ว ป้องกันของเสียหลุดไปถึงลูกค้า"
 
 SHEET_ID = "1cCKqj56MBas_v5c2dR1ryCNa9c4YulxtsKPbsz-7PUY"
 SHEET_GID = "0"
@@ -796,26 +796,6 @@ div[data-testid="stExpander"] {
     text-align: right;
 }
 
-.qr-box {
-    background: rgba(255,255,255,.94);
-    border: 1px solid #dbeafe;
-    border-radius: 24px;
-    padding: 15px;
-    box-shadow: 0 13px 31px rgba(15, 23, 42, .075);
-    margin-top: 12px;
-}
-
-.help-card {
-    background: #eff6ff;
-    border: 1px solid #bfdbfe;
-    border-radius: 18px;
-    padding: 13px;
-    color: #1e3a8a;
-    font-size: 14px;
-    font-weight: 850;
-    margin-top: 12px;
-}
-
 @media (max-width: 640px) {
     .title {
         font-size: 34px;
@@ -845,12 +825,12 @@ div[data-testid="stExpander"] {
 st.markdown(
     f"""
 <div class="app-header">
-    <div style="color:#94a3b8;font-size:12px;font-weight:900;margin-bottom:8px;">{APP_VERSION}</div>
+    <div style="color:#64748b;font-size:13px;font-weight:900;letter-spacing:.3px;margin-bottom:8px;">🚨 {APP_VERSION}</div>
     <div class="brand">
         <div class="logo">🚨</div>
         <div>
             <div class="title">QUALITY <span>ALERT</span></div>
-            <div class="subtitle">แจ้งง่าย เห็นเร็ว ป้องกันก่อนเสีย</div>
+            <div class="subtitle">ทุกคนคือ QA • พบก่อน แจ้งก่อน ป้องกันของเสีย</div>
         </div>
     </div>
 </div>
@@ -858,8 +838,8 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-tab_alert, tab_latest, tab_dashboard, tab_qr = st.tabs(
-    ["🚨 แจ้งปัญหา", "📋 ล่าสุด", "📊 แดชบอร์ด", "🔗 คิวอาร์"]
+tab_alert, tab_latest, tab_dashboard = st.tabs(
+    ["🚨 แจ้งปัญหา", "📋 ล่าสุด", "📊 แดชบอร์ด"]
 )
 
 with tab_alert:
@@ -869,8 +849,8 @@ with tab_alert:
         <div class="form-top">
             <div class="form-icon">🚨</div>
             <div>
-                <div class="form-title">แจ้งปัญหาหน้างาน</div>
-                <div class="form-sub">เจออะไร • กี่ใบ • รุนแรงแค่ไหน</div>
+                <div class="form-title">🚨 แจ้งปัญหาคุณภาพ</div>
+                <div class="form-sub">ทุกคนคือ QA • พบก่อน แจ้งก่อน ป้องกันของเสีย</div>
             </div>
         </div>
         """,
@@ -1186,21 +1166,3 @@ with tab_dashboard:
                     int(row["จำนวนใบ"]),
                     int(row["จำนวนเคส"]),
                 )
-
-with tab_qr:
-    st.markdown('<div class="qr-box">', unsafe_allow_html=True)
-    st.markdown(
-        '<div style="font-size:20px;font-weight:1000;color:#0f172a;margin-bottom:8px;">🔗 ลิงก์สำหรับทำคิวอาร์จุดเดียว</div>',
-        unsafe_allow_html=True,
-    )
-    base_url = "https://quality-alert-9j5j2cx7n5ddb6qsr7wd3j.streamlit.app"
-    st.code(base_url)
-    st.markdown(
-        """
-        <div class="help-card">
-        ใช้ QR จุดเดียว เปิดมาเลือกเครื่อง/จุดงาน / ปัญหา / จำนวน / ความรุนแรง แล้วส่งได้ทันที บันทึกลง Google Sheet และเก็บคะแนนให้อัตโนมัติ
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-    st.markdown('</div>', unsafe_allow_html=True)
