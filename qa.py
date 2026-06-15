@@ -3,12 +3,18 @@ import pandas as pd
 from datetime import datetime
 from pathlib import Path
 import base64
+import requests
+from io import StringIO
 
 st.set_page_config(page_title="QUALITY ALERT", page_icon="🚨", layout="centered")
 
-APP_VERSION = "V14-SEVERITY-SIZE-CLEAR"
+APP_VERSION = "V15-GOOGLE-SHEET"
 
-DATA_FILE = Path("quality_alert.xlsx")
+SHEET_ID = "1cCKqj56MBas_v5c2dR1ryCNa9c4YulxtsKPbsz-7PUY"
+SHEET_GID = "0"
+GOOGLE_SHEET_CSV_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv&gid={SHEET_GID}"
+APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzoB7Isb-v-J4JgvkYBfiI7wJJlOPQx-flS1aCzGOxyOUMa4HnEzyxfCJdBhdbCQRLR/exec"
+
 IMG_DIR = Path("images")
 IMG_DIR.mkdir(exist_ok=True)
 
@@ -51,14 +57,6 @@ COST_PER_SHEET = 2.5
 
 
 def load_data():
-    if DATA_FILE.exists():
-        try:
-            df = pd.read_excel(DATA_FILE)
-        except Exception:
-            df = pd.DataFrame()
-    else:
-        df = pd.DataFrame()
-
     required_cols = {
         "วันที่": "",
         "เวลา": "",
@@ -68,32 +66,41 @@ def load_data():
         "อาการ": "",
         "จำนวน": 0,
         "ระดับ": "",
+        "ขนาดเหตุการณ์": "",
+        "คะแนน": 0,
         "มูลค่าป้องกัน": 0,
         "รูปภาพ": "",
         "สถานะ": "Open",
-        "คะแนน": 0,
-        "ขนาดเหตุการณ์": "",
     }
+
+    try:
+        response = requests.get(GOOGLE_SHEET_CSV_URL, timeout=10)
+        response.raise_for_status()
+        csv_text = response.text.strip()
+
+        if not csv_text:
+            df = pd.DataFrame()
+        else:
+            df = pd.read_csv(StringIO(csv_text))
+
+    except Exception:
+        df = pd.DataFrame()
 
     for col, default in required_cols.items():
         if col not in df.columns:
             df[col] = default
 
-    # migrate old data
     if "ปัญหาที่พบ" in df.columns and "อาการ" in df.columns:
         mask = df["ปัญหาที่พบ"].astype(str).str.strip().isin(["", "nan", "None"])
         df.loc[mask, "ปัญหาที่พบ"] = df.loc[mask, "อาการ"]
 
-    if "เครื่อง" in df.columns:
-        df["เครื่อง"] = df["เครื่อง"].astype(str).replace("nan", "").replace("", "ไม่ระบุ")
-
+    df["เครื่อง"] = df["เครื่อง"].astype(str).replace("nan", "").replace("", "ไม่ระบุ")
     df["ปัญหาที่พบ"] = df["ปัญหาที่พบ"].astype(str).replace("nan", "").replace("", "ไม่ระบุ")
     df["จำนวน"] = pd.to_numeric(df["จำนวน"], errors="coerce").fillna(0).astype(int)
     df["ขนาดเหตุการณ์"] = df["ขนาดเหตุการณ์"].astype(str).replace("nan", "").replace("", "")
     df["มูลค่าป้องกัน"] = pd.to_numeric(df["มูลค่าป้องกัน"], errors="coerce").fillna(0)
     df["คะแนน"] = pd.to_numeric(df["คะแนน"], errors="coerce").fillna(0).astype(int)
 
-    # migrate old score: old records get at least 1 point
     old_score_mask = df["คะแนน"] <= 0
     df.loc[old_score_mask, "คะแนน"] = 1
 
@@ -103,12 +110,36 @@ def load_data():
     missing_size = df["ขนาดเหตุการณ์"].astype(str).str.strip() == ""
     df.loc[missing_size, "ขนาดเหตุการณ์"] = df.loc[missing_size, "จำนวน"].apply(get_event_size)
 
-    return df
+    show_cols = list(required_cols.keys())
+    return df[show_cols]
 
 
-def save_data(df):
-    df.to_excel(DATA_FILE, index=False)
+def save_to_google_sheet(row):
+    payload = {
+        "date": row["วันที่"],
+        "time": row["เวลา"],
+        "reporter": row["ผู้แจ้ง"],
+        "machine": row["เครื่อง"],
+        "problem": row["ปัญหาที่พบ"],
+        "qty": row["จำนวน"],
+        "severity": row["ระดับ"],
+        "event_size": row["ขนาดเหตุการณ์"],
+        "score": row["คะแนน"],
+        "value": row["มูลค่าป้องกัน"],
+        "image": row["รูปภาพ"],
+    }
 
+    try:
+        response = requests.post(
+            APPS_SCRIPT_URL,
+            json=payload,
+            timeout=15,
+        )
+        response.raise_for_status()
+        return True, ""
+
+    except Exception as e:
+        return False, str(e)
 
 def safe_int(value):
     try:
@@ -810,9 +841,14 @@ with tab_alert:
             "ขนาดเหตุการณ์": event_size,
         }
 
-        df = load_data()
-        df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
-        save_data(df)
+        df_before = load_data()
+        ok, err = save_to_google_sheet(new_row)
+
+        if not ok:
+            st.error(f"บันทึกลง Google Sheet ไม่สำเร็จ: {err}")
+            st.stop()
+
+        df = pd.concat([df_before, pd.DataFrame([new_row])], ignore_index=True)
 
         reporter_df = df[df["ผู้แจ้ง"].astype(str).str.strip() != ""].copy()
         reporter_df["ผู้แจ้ง"] = reporter_df["ผู้แจ้ง"].astype(str).str.strip()
@@ -1020,7 +1056,7 @@ with tab_qr:
     st.markdown(
         """
         <div class="help-card">
-        ใช้ QR จุดเดียว เปิดมาเลือกเครื่อง / ปัญหา / จำนวน / ความรุนแรง แล้วส่งได้ทันที ระบบเก็บคะแนนให้อัตโนมัติ
+        ใช้ QR จุดเดียว เปิดมาเลือกเครื่อง / ปัญหา / จำนวน / ความรุนแรง แล้วส่งได้ทันที บันทึกลง Google Sheet และเก็บคะแนนให้อัตโนมัติ
         </div>
         """,
         unsafe_allow_html=True,
