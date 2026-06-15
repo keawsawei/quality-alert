@@ -8,7 +8,7 @@ from io import StringIO
 
 st.set_page_config(page_title="QUALITY ALERT", page_icon="🚨", layout="centered")
 
-APP_VERSION = "V15-GOOGLE-SHEET"
+APP_VERSION = "V16-THAI-SIMPLE-FIREWORK"
 
 SHEET_ID = "1cCKqj56MBas_v5c2dR1ryCNa9c4YulxtsKPbsz-7PUY"
 SHEET_GID = "0"
@@ -19,6 +19,7 @@ IMG_DIR = Path("images")
 IMG_DIR.mkdir(exist_ok=True)
 
 MACHINES = [
+    "ลูกฟูก",
     "F115-IBIS",
     "F84-EVOL",
     "F84-EVOL2",
@@ -29,30 +30,34 @@ MACHINES = [
     "4FP96",
     "ASAHI",
     "BOBST",
+    "งานคัด",
+    "งานกาว",
+    "งานตอก",
+    "ขึ้นรูป",
 ]
 
 PROBLEMS = [
-    "พิมพ์เลื่อน",
-    "สีเพี้ยน",
-    "หมึกเปื้อน",
-    "Register ไม่ตรง",
-    "กาวไม่ติด",
-    "กาวล้น",
-    "ประกบเบี้ยว",
-    "ตอกหลุด",
-    "ตอกไม่ครบ",
-    "ตอกเบี้ยว",
-    "ล็อคไม่เข้า",
-    "บากแตก",
-    "Diecut ไม่ขาด",
+    "กระดาษพอง-ล่อน",
     "กระดาษยับ",
-    "กระดาษแตก",
-    "งานเปื้อน",
-    "งานขาด",
-    "อื่นๆ",
+    "กระดาษไม่เต็มลอน",
+    "พิมพ์เลื่อน",
+    "พิมพ์เลอะ,ตัน,เบลอ",
+    "พิมพ์ไม่ติด",
+    "ร่องกาวเบี้ยว",
+    "ร่องกาวชิด-ห่าง",
+    "กล่องฝาเกย-ห่าง,ขึ้นรูปไม่ได้",
+    "Slot ลึก",
+    "กาวเลอะ",
+    "กาวไม่ติด",
+    "ทับรอยแตกนอก",
+    "ทับรอยแตกใน",
+    "เศษ Rotary-Diecut ตัดไม่ขาด",
+    "กระดาษเปื้อน",
+    "ชำรุดจากจัดส่ง",
+    "อื่นๆ (พิมพ์เพิ่มเติมได้)",
 ]
 
-SEVERITY_LIST = ["🟢 Improvement", "🟡 Attention", "🔴 Critical Alert"]
+SEVERITY_LIST = ["ต่ำ", "กลาง", "สูง"]
 COST_PER_SHEET = 2.5
 
 
@@ -61,7 +66,7 @@ def load_data():
         "วันที่": "",
         "เวลา": "",
         "ผู้แจ้ง": "",
-        "เครื่อง": "",
+        "เครื่อง/จุดงาน": "",
         "ปัญหาที่พบ": "",
         "อาการ": "",
         "จำนวน": 0,
@@ -70,7 +75,7 @@ def load_data():
         "คะแนน": 0,
         "มูลค่าป้องกัน": 0,
         "รูปภาพ": "",
-        "สถานะ": "Open",
+        "สถานะ": "เปิดเคส",
     }
 
     try:
@@ -94,7 +99,7 @@ def load_data():
         mask = df["ปัญหาที่พบ"].astype(str).str.strip().isin(["", "nan", "None"])
         df.loc[mask, "ปัญหาที่พบ"] = df.loc[mask, "อาการ"]
 
-    df["เครื่อง"] = df["เครื่อง"].astype(str).replace("nan", "").replace("", "ไม่ระบุ")
+    df["เครื่อง/จุดงาน"] = df["เครื่อง/จุดงาน"].astype(str).replace("nan", "").replace("", "ไม่ระบุ")
     df["ปัญหาที่พบ"] = df["ปัญหาที่พบ"].astype(str).replace("nan", "").replace("", "ไม่ระบุ")
     df["จำนวน"] = pd.to_numeric(df["จำนวน"], errors="coerce").fillna(0).astype(int)
     df["ขนาดเหตุการณ์"] = df["ขนาดเหตุการณ์"].astype(str).replace("nan", "").replace("", "")
@@ -119,7 +124,7 @@ def save_to_google_sheet(row):
         "date": row["วันที่"],
         "time": row["เวลา"],
         "reporter": row["ผู้แจ้ง"],
-        "machine": row["เครื่อง"],
+        "machine": row["เครื่อง/จุดงาน"],
         "problem": row["ปัญหาที่พบ"],
         "qty": row["จำนวน"],
         "severity": row["ระดับ"],
@@ -163,11 +168,11 @@ def image_to_base64(path):
 
 def severity_style(severity):
     severity = str(severity).strip()
-    if "Critical" in severity or "สูง" in severity:
-        return "#ef233c", "🚑", "Critical Alert"
-    if "Attention" in severity or "กลาง" in severity:
-        return "#f59e0b", "🚔", "Attention"
-    return "#22c55e", "💡", "Improvement"
+    if "สูง" in severity or "Critical" in severity:
+        return "#ef233c", "🚑", "ระดับสูง"
+    if "กลาง" in severity or "Attention" in severity:
+        return "#f59e0b", "🚔", "ระดับกลาง"
+    return "#22c55e", "💡", "ระดับต่ำ"
 
 
 def get_event_size(qty):
@@ -200,7 +205,7 @@ def latest_card(row):
     date = str(row.get("วันที่", ""))
     time = str(row.get("เวลา", ""))
     reporter = str(row.get("ผู้แจ้ง", ""))
-    machine = str(row.get("เครื่อง", "ไม่ระบุ"))
+    machine = str(row.get("เครื่อง/จุดงาน", "ไม่ระบุ"))
     problem = str(row.get("ปัญหาที่พบ", row.get("อาการ", "")))
     qty = safe_int(row.get("จำนวน", 0))
     severity = str(row.get("ระดับ", ""))
@@ -740,7 +745,7 @@ st.markdown(
 )
 
 tab_alert, tab_latest, tab_dashboard, tab_qr = st.tabs(
-    ["🚨 แจ้งปัญหา", "📋 ล่าสุด", "📊 Dashboard", "🔗 QR"]
+    ["🚨 แจ้งปัญหา", "📋 ล่าสุด", "📊 แดชบอร์ด", "🔗 คิวอาร์"]
 )
 
 with tab_alert:
@@ -763,13 +768,13 @@ with tab_alert:
 
         reporter = st.text_input("👤 ผู้แจ้ง", placeholder="ใส่ชื่อผู้แจ้ง")
 
-        machine = st.selectbox("🏭 เครื่อง", MACHINES, index=0)
+        machine = st.selectbox("🏭 เครื่อง/จุดงาน/จุดงาน", MACHINES, index=0)
 
         problem_select = st.selectbox("🔍 ปัญหาที่พบ", PROBLEMS, index=0)
 
         custom_problem = ""
-        if problem_select == "อื่นๆ":
-            custom_problem = st.text_input("✍️ ระบุปัญหา", placeholder="พิมพ์ปัญหาที่พบ")
+        if problem_select == "อื่นๆ (พิมพ์เพิ่มเติมได้)":
+            custom_problem = st.text_input("✍️ ระบุปัญหา", placeholder="พิมพ์ปัญหาที่พบเพิ่มเติม")
 
         qty = st.number_input("🔢 จำนวนที่พบ / ใบ", min_value=1, step=1)
 
@@ -781,7 +786,7 @@ with tab_alert:
         with st.expander("📷 เพิ่มรูปภาพ (ไม่บังคับ)", expanded=False):
             image = st.camera_input("📷 แตะเพื่อถ่ายภาพ")
             upload_image = st.file_uploader(
-                "หรือเลือกภาพจากเครื่อง",
+                "หรือเลือกภาพจากเครื่อง/จุดงาน",
                 type=["jpg", "jpeg", "png"],
             )
 
@@ -795,7 +800,7 @@ with tab_alert:
             st.error("กรุณาใส่ชื่อผู้แจ้ง")
             st.stop()
 
-        problem = custom_problem.strip() if problem_select == "อื่นๆ" else problem_select
+        problem = custom_problem.strip() if problem_select == "อื่นๆ (พิมพ์เพิ่มเติมได้)" else problem_select
 
         if not problem:
             st.error("กรุณาระบุปัญหาที่พบ")
@@ -818,9 +823,9 @@ with tab_alert:
         score = 1
         if final_image is not None:
             score += 1
-        if "Attention" in severity:
+        if "กลาง" in severity:
             score += 1
-        elif "Critical" in severity:
+        elif "สูง" in severity:
             score += 2
 
         event_size = get_event_size(qty)
@@ -829,14 +834,14 @@ with tab_alert:
             "วันที่": now.strftime("%d/%m/%Y"),
             "เวลา": now.strftime("%H:%M:%S"),
             "ผู้แจ้ง": reporter.strip(),
-            "เครื่อง": machine,
+            "เครื่อง/จุดงาน": machine,
             "ปัญหาที่พบ": problem,
             "อาการ": problem,
             "จำนวน": int(qty),
             "ระดับ": severity,
             "มูลค่าป้องกัน": damage_value,
             "รูปภาพ": str(img_path),
-            "สถานะ": "Open",
+            "สถานะ": "เปิดเคส",
             "คะแนน": score,
             "ขนาดเหตุการณ์": event_size,
         }
@@ -871,9 +876,9 @@ with tab_alert:
                 total_my_score = int(rank_df.loc[hit[0], "คะแนนรวม"])
 
         alert_color, alert_icon, alert_name = severity_style(severity)
-        if "Critical" in severity:
-            alert_message = "พบเหตุที่ควรตรวจสอบทันที"
-        elif "Attention" in severity:
+        if "สูง" in severity:
+            alert_message = "รับเรื่องแล้ว กรุณาตรวจสอบหน้างานทันที"
+        elif "กลาง" in severity:
             alert_message = "รับทราบแล้ว โปรดเฝ้าระวังและติดตาม"
         else:
             alert_message = "รับข้อมูลเรียบร้อย ขอบคุณที่ช่วยป้องกันปัญหา"
@@ -890,7 +895,7 @@ with tab_alert:
                         <div class="success-value">{problem}</div>
                     </div>
                     <div class="success-box">
-                        <div class="success-label">เครื่อง</div>
+                        <div class="success-label">เครื่อง/จุดงาน</div>
                         <div class="success-value">{machine}</div>
                     </div>
                     <div class="success-box">
@@ -906,6 +911,8 @@ with tab_alert:
             """,
             unsafe_allow_html=True,
         )
+        st.balloons()
+        st.toast("✅ ส่งแจ้งเตือนสำเร็จ", icon="🚨")
 
 with tab_latest:
     st.markdown('<div class="section-title">📋 รายการแจ้งเตือนล่าสุด</div>', unsafe_allow_html=True)
@@ -919,7 +926,7 @@ with tab_latest:
             latest_card(row)
 
 with tab_dashboard:
-    st.markdown('<div class="section-title">📊 Dashboard หัวหน้างาน</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-title">📊 แดชบอร์ดหัวหน้างาน</div>', unsafe_allow_html=True)
     df = load_data()
 
     if df.empty:
@@ -1048,7 +1055,7 @@ with tab_dashboard:
 with tab_qr:
     st.markdown('<div class="qr-box">', unsafe_allow_html=True)
     st.markdown(
-        '<div style="font-size:20px;font-weight:1000;color:#0f172a;margin-bottom:8px;">🔗 ลิงก์สำหรับทำ QR จุดเดียว</div>',
+        '<div style="font-size:20px;font-weight:1000;color:#0f172a;margin-bottom:8px;">🔗 ลิงก์สำหรับทำคิวอาร์จุดเดียว</div>',
         unsafe_allow_html=True,
     )
     base_url = "https://quality-alert-9j5j2cx7n5ddb6qsr7wd3j.streamlit.app"
@@ -1056,7 +1063,7 @@ with tab_qr:
     st.markdown(
         """
         <div class="help-card">
-        ใช้ QR จุดเดียว เปิดมาเลือกเครื่อง / ปัญหา / จำนวน / ความรุนแรง แล้วส่งได้ทันที บันทึกลง Google Sheet และเก็บคะแนนให้อัตโนมัติ
+        ใช้ QR จุดเดียว เปิดมาเลือกเครื่อง/จุดงาน / ปัญหา / จำนวน / ความรุนแรง แล้วส่งได้ทันที บันทึกลง Google Sheet และเก็บคะแนนให้อัตโนมัติ
         </div>
         """,
         unsafe_allow_html=True,
