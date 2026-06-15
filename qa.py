@@ -938,32 +938,25 @@ div[data-testid="stExpander"] {
 )
 
 st.markdown(
-    f"""
-<div class="app-header">
-    <div class="hero-top">
-        <div class="hero-tagline">🚨 {APP_VERSION}</div>
-        <div class="hero-badge">QA LINE ACTIVE</div>
-    </div>
-
-    <div class="brand">
-        <div class="logo">🚨</div>
-        <div>
-            <div class="title">QUALITY <span>ALERT</span></div>
-            <div class="subtitle">ทุกคนคือ QA • พบก่อน แจ้งก่อน ป้องกันของเสีย</div>
-        </div>
-    </div>
-
-    <div class="hero-pills">
-        <div class="hero-pill">⚡ แจ้งง่าย</div>
-        <div class="hero-pill">👀 เห็นเร็ว</div>
-        <div class="hero-pill">🛡️ กันหลุดลูกค้า</div>
-    </div>
-
-    <div class="hero-action">
-        พบความผิดปกติด้านคุณภาพ แจ้งได้ทันที ไม่ต้องรอให้กลายเป็นของเสีย
-    </div>
+    f"""<div class="app-header">
+<div class="hero-top">
+<div class="hero-tagline">🚨 {APP_VERSION}</div>
+<div class="hero-badge">QA LINE ACTIVE</div>
 </div>
-""",
+<div class="brand">
+<div class="logo">🚨</div>
+<div>
+<div class="title">QUALITY <span>ALERT</span></div>
+<div class="subtitle">ทุกคนคือ QA • พบก่อน แจ้งก่อน ป้องกันของเสีย</div>
+</div>
+</div>
+<div class="hero-pills">
+<div class="hero-pill">⚡ แจ้งง่าย</div>
+<div class="hero-pill">👀 เห็นเร็ว</div>
+<div class="hero-pill">🛡️ กันหลุดลูกค้า</div>
+</div>
+<div class="hero-action">พบความผิดปกติด้านคุณภาพ แจ้งได้ทันที ไม่ต้องรอให้กลายเป็นของเสีย</div>
+</div>""",
     unsafe_allow_html=True,
 )
 
