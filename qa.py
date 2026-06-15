@@ -4,11 +4,12 @@ from datetime import datetime
 from pathlib import Path
 import base64
 import requests
+import json
 from io import StringIO
 
 st.set_page_config(page_title="QUALITY ALERT", page_icon="🚨", layout="centered")
 
-APP_VERSION = "V16-THAI-SIMPLE-FIREWORK"
+APP_VERSION = "V17-FIX-READ-SHEET"
 
 SHEET_ID = "1cCKqj56MBas_v5c2dR1ryCNa9c4YulxtsKPbsz-7PUY"
 SHEET_GID = "0"
@@ -62,21 +63,20 @@ COST_PER_SHEET = 2.5
 
 
 def load_data():
-    required_cols = {
-        "วันที่": "",
-        "เวลา": "",
-        "ผู้แจ้ง": "",
-        "เครื่อง/จุดงาน": "",
-        "ปัญหาที่พบ": "",
-        "อาการ": "",
-        "จำนวน": 0,
-        "ระดับ": "",
-        "ขนาดเหตุการณ์": "",
-        "คะแนน": 0,
-        "มูลค่าป้องกัน": 0,
-        "รูปภาพ": "",
-        "สถานะ": "เปิดเคส",
-    }
+    required_cols = [
+        "วันที่",
+        "เวลา",
+        "ผู้แจ้ง",
+        "เครื่อง/จุดงาน",
+        "ปัญหาที่พบ",
+        "จำนวน",
+        "ระดับ",
+        "ขนาดเหตุการณ์",
+        "คะแนน",
+        "มูลค่าป้องกัน",
+        "รูปภาพ",
+        "สถานะ",
+    ]
 
     try:
         response = requests.get(GOOGLE_SHEET_CSV_URL, timeout=10)
@@ -84,39 +84,72 @@ def load_data():
         csv_text = response.text.strip()
 
         if not csv_text:
-            df = pd.DataFrame()
+            df = pd.DataFrame(columns=required_cols)
         else:
-            df = pd.read_csv(StringIO(csv_text))
+            df = pd.read_csv(StringIO(csv_text), dtype=str)
 
     except Exception:
-        df = pd.DataFrame()
+        df = pd.DataFrame(columns=required_cols)
 
-    for col, default in required_cols.items():
+    # ล้างชื่อหัวตาราง กันช่องว่าง / BOM / อักขระแปลกจาก Google Sheet
+    df.columns = [str(c).strip().replace("\ufeff", "") for c in df.columns]
+
+    # ถ้าหัวคอลัมน์อ่านเพี้ยน ให้อิงตามตำแหน่ง A-L ของชีตแทน
+    must_have = {"วันที่", "เวลา", "ผู้แจ้ง", "เครื่อง/จุดงาน", "ปัญหาที่พบ", "คะแนน"}
+    if not must_have.issubset(set(df.columns)):
+        df = df.iloc[:, :12].copy()
+        df.columns = required_cols[:len(df.columns)]
+
+    # เติมคอลัมน์ที่ขาด
+    for col in required_cols:
         if col not in df.columns:
-            df[col] = default
+            df[col] = ""
 
-    if "ปัญหาที่พบ" in df.columns and "อาการ" in df.columns:
-        mask = df["ปัญหาที่พบ"].astype(str).str.strip().isin(["", "nan", "None"])
-        df.loc[mask, "ปัญหาที่พบ"] = df.loc[mask, "อาการ"]
+    df = df[required_cols].copy()
 
-    df["เครื่อง/จุดงาน"] = df["เครื่อง/จุดงาน"].astype(str).replace("nan", "").replace("", "ไม่ระบุ")
-    df["ปัญหาที่พบ"] = df["ปัญหาที่พบ"].astype(str).replace("nan", "").replace("", "ไม่ระบุ")
+    # ล้างข้อมูลข้อความ
+    text_cols = [
+        "วันที่",
+        "เวลา",
+        "ผู้แจ้ง",
+        "เครื่อง/จุดงาน",
+        "ปัญหาที่พบ",
+        "ระดับ",
+        "ขนาดเหตุการณ์",
+        "รูปภาพ",
+        "สถานะ",
+    ]
+    for col in text_cols:
+        df[col] = (
+            df[col]
+            .astype(str)
+            .replace("nan", "")
+            .replace("None", "")
+            .str.strip()
+        )
+
+    df["เครื่อง/จุดงาน"] = df["เครื่อง/จุดงาน"].replace("", "ไม่ระบุ")
+    df["ปัญหาที่พบ"] = df["ปัญหาที่พบ"].replace("", "ไม่ระบุ")
+    df["สถานะ"] = df["สถานะ"].replace("", "Open")
+
+    # แปลงตัวเลข
     df["จำนวน"] = pd.to_numeric(df["จำนวน"], errors="coerce").fillna(0).astype(int)
-    df["ขนาดเหตุการณ์"] = df["ขนาดเหตุการณ์"].astype(str).replace("nan", "").replace("", "")
-    df["มูลค่าป้องกัน"] = pd.to_numeric(df["มูลค่าป้องกัน"], errors="coerce").fillna(0)
     df["คะแนน"] = pd.to_numeric(df["คะแนน"], errors="coerce").fillna(0).astype(int)
+    df["มูลค่าป้องกัน"] = pd.to_numeric(df["มูลค่าป้องกัน"], errors="coerce").fillna(0)
 
-    old_score_mask = df["คะแนน"] <= 0
+    # แก้ข้อมูลเก่า ถ้าไม่มีคะแนนแต่มีข้อมูลจริง ให้คะแนนเริ่มต้น 1
+    old_score_mask = (df["คะแนน"] <= 0) & (df["ผู้แจ้ง"].astype(str).str.strip() != "")
     df.loc[old_score_mask, "คะแนน"] = 1
 
-    mask_value = df["มูลค่าป้องกัน"] <= 0
+    # ถ้ามูลค่าไม่มี ให้คิดจากจำนวนใบ
+    mask_value = (df["มูลค่าป้องกัน"] <= 0) & (df["จำนวน"] > 0)
     df.loc[mask_value, "มูลค่าป้องกัน"] = df.loc[mask_value, "จำนวน"] * COST_PER_SHEET
 
+    # เติมขนาดเหตุการณ์ ถ้าว่าง
     missing_size = df["ขนาดเหตุการณ์"].astype(str).str.strip() == ""
     df.loc[missing_size, "ขนาดเหตุการณ์"] = df.loc[missing_size, "จำนวน"].apply(get_event_size)
 
-    show_cols = list(required_cols.keys())
-    return df[show_cols]
+    return df
 
 
 def save_to_google_sheet(row):
@@ -137,7 +170,8 @@ def save_to_google_sheet(row):
     try:
         response = requests.post(
             APPS_SCRIPT_URL,
-            json=payload,
+            data=json.dumps(payload, ensure_ascii=False),
+            headers={"Content-Type": "application/json"},
             timeout=15,
         )
         response.raise_for_status()
