@@ -350,51 +350,145 @@ st.markdown(
 }
 
 .app-header {
+    position: relative;
+    overflow: hidden;
     background:
-        linear-gradient(135deg, rgba(255,255,255,.96), rgba(248,250,252,.90));
-    border: 1px solid rgba(226, 232, 240, .95);
-    border-radius: 32px;
-    padding: 20px;
-    box-shadow: 0 26px 70px rgba(15, 23, 42, .13);
+        radial-gradient(circle at 12% 18%, rgba(255,255,255,.26), transparent 18%),
+        radial-gradient(circle at 92% 8%, rgba(248,113,113,.36), transparent 23%),
+        linear-gradient(135deg, #071f52 0%, #1554d1 52%, #ef233c 100%);
+    border: 1px solid rgba(255,255,255,.38);
+    border-radius: 34px;
+    padding: 22px;
+    box-shadow: 0 30px 80px rgba(15, 23, 42, .22);
+    margin-bottom: 14px;
+    color: white;
+}
+
+.app-header:before {
+    content: "";
+    position: absolute;
+    inset: -80px -120px auto auto;
+    width: 300px;
+    height: 300px;
+    border-radius: 999px;
+    background: rgba(255,255,255,.14);
+}
+
+.app-header:after {
+    content: "";
+    position: absolute;
+    left: 22px;
+    right: 22px;
+    bottom: 0;
+    height: 5px;
+    border-radius: 999px 999px 0 0;
+    background: linear-gradient(90deg, #38bdf8, #ffffff, #fb7185);
+    opacity: .88;
+}
+
+.hero-top {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
     margin-bottom: 14px;
 }
 
+.hero-tagline {
+    color: rgba(255,255,255,.92);
+    font-size: 13px;
+    font-weight: 1000;
+    letter-spacing: .2px;
+}
+
+.hero-badge {
+    background: rgba(255,255,255,.16);
+    border: 1px solid rgba(255,255,255,.30);
+    color: #ffffff;
+    border-radius: 999px;
+    padding: 7px 11px;
+    font-size: 11px;
+    font-weight: 1000;
+    white-space: nowrap;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.14);
+}
+
 .brand {
+    position: relative;
+    z-index: 2;
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: 16px;
 }
 
 .logo {
-    width: 66px;
-    height: 66px;
-    border-radius: 24px;
-    background: linear-gradient(145deg, #082f7a, #2563eb 58%, #ef233c);
+    width: 76px;
+    height: 76px;
+    border-radius: 26px;
+    background:
+        radial-gradient(circle at 28% 24%, rgba(255,255,255,.35), transparent 28%),
+        linear-gradient(145deg, #0f2f77, #2563eb 54%, #ef233c);
     display: flex;
     align-items: center;
     justify-content: center;
     color: white;
-    font-size: 36px;
-    box-shadow: 0 14px 32px rgba(7, 31, 82, .25);
+    font-size: 42px;
+    box-shadow: 0 18px 42px rgba(0, 0, 0, .24);
+    border: 1px solid rgba(255,255,255,.22);
 }
 
 .title {
-    font-size: 40px;
-    line-height: .92;
+    font-size: 43px;
+    line-height: .9;
     font-weight: 1000;
-    color: #071f52;
-    letter-spacing: -1.3px;
+    color: #ffffff;
+    letter-spacing: -1.4px;
+    text-shadow: 0 4px 18px rgba(0,0,0,.20);
 }
 
 .title span {
-    color: #ef233c;
+    color: #ffffff;
 }
 
 .subtitle {
-    margin-top: 6px;
-    color: #334155;
-    font-size: 15px;
-    font-weight: 850;
+    margin-top: 8px;
+    color: rgba(255,255,255,.94);
+    font-size: 16px;
+    font-weight: 1000;
+}
+
+.hero-pills {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 16px;
+}
+
+.hero-pill {
+    background: rgba(255,255,255,.14);
+    border: 1px solid rgba(255,255,255,.25);
+    color: #ffffff;
+    border-radius: 999px;
+    padding: 8px 12px;
+    font-size: 12px;
+    font-weight: 1000;
+}
+
+.hero-action {
+    position: relative;
+    z-index: 2;
+    margin-top: 14px;
+    background: rgba(255,255,255,.92);
+    color: #0f2f77;
+    border-radius: 18px;
+    padding: 12px 14px;
+    font-size: 14px;
+    font-weight: 1000;
+    box-shadow: 0 12px 28px rgba(0,0,0,.12);
 }
 
 div[data-testid="stTabs"] [data-baseweb="tab-list"] {
@@ -816,6 +910,27 @@ div[data-testid="stExpander"] {
         width: 58px;
         height: 58px;
     }
+    .app-header {
+        padding: 18px;
+        border-radius: 28px;
+    }
+    .hero-top {
+        align-items: flex-start;
+    }
+    .hero-badge {
+        font-size: 10px;
+        padding: 6px 9px;
+    }
+    .hero-tagline {
+        font-size: 11px;
+        line-height: 1.25;
+    }
+    .subtitle {
+        font-size: 14px;
+    }
+    .hero-action {
+        font-size: 13px;
+    }
 }
 </style>
 """,
@@ -825,13 +940,27 @@ div[data-testid="stExpander"] {
 st.markdown(
     f"""
 <div class="app-header">
-    <div style="color:#64748b;font-size:13px;font-weight:900;letter-spacing:.3px;margin-bottom:8px;">🚨 {APP_VERSION}</div>
+    <div class="hero-top">
+        <div class="hero-tagline">🚨 {APP_VERSION}</div>
+        <div class="hero-badge">QA LINE ACTIVE</div>
+    </div>
+
     <div class="brand">
         <div class="logo">🚨</div>
         <div>
             <div class="title">QUALITY <span>ALERT</span></div>
-            <div class="subtitle">พบก่อน แจ้งก่อน ป้องกันของเสีย</div>
+            <div class="subtitle">ทุกคนคือ QA • พบก่อน แจ้งก่อน ป้องกันของเสีย</div>
         </div>
+    </div>
+
+    <div class="hero-pills">
+        <div class="hero-pill">⚡ แจ้งง่าย</div>
+        <div class="hero-pill">👀 เห็นเร็ว</div>
+        <div class="hero-pill">🛡️ กันหลุดลูกค้า</div>
+    </div>
+
+    <div class="hero-action">
+        พบความผิดปกติด้านคุณภาพ แจ้งได้ทันที ไม่ต้องรอให้กลายเป็นของเสีย
     </div>
 </div>
 """,
@@ -850,7 +979,7 @@ with tab_alert:
             <div class="form-icon">🚨</div>
             <div>
                 <div class="form-title">แจ้งปัญหาคุณภาพ</div>
-                <div class="form-sub">ทุกคนคือ QA • พบก่อน แจ้งก่อน ลดของเสีย</div>
+                <div class="form-sub">ทุกคนคือ QA • พบก่อน แจ้งก่อน ป้องกันของเสีย</div>
             </div>
         </div>
         """,
