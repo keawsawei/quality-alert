@@ -9,7 +9,7 @@ from io import StringIO
 
 st.set_page_config(page_title="QUALITY ALERT", page_icon="🚨", layout="centered")
 
-APP_VERSION = "V18-FIX-THAI-UPLOAD-UI"
+APP_VERSION = "V20-NO-CAMERA-UPLOAD-DETAIL-UI"
 
 SHEET_ID = "1cCKqj56MBas_v5c2dR1ryCNa9c4YulxtsKPbsz-7PUY"
 SHEET_GID = "0"
@@ -483,25 +483,64 @@ label {
 
 
 
-/* แยกปุ่มอัปโหลดให้ไม่ทับกัน */
+/* กล่องอัปโหลดภาพแบบแอป ไม่ซ้อนตัวหนังสือ */
+.upload-head {
+    background: linear-gradient(135deg, #eff6ff, #ffffff);
+    border: 1px solid #bfdbfe;
+    border-radius: 20px;
+    padding: 14px 16px;
+    margin: 12px 0 8px 0;
+    box-shadow: 0 10px 26px rgba(37,99,235,.08);
+}
+
+.upload-title {
+    color: #0f172a;
+    font-size: 16px;
+    font-weight: 1000;
+    margin-bottom: 3px;
+}
+
+.upload-sub {
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 800;
+}
+
 div[data-testid="stFileUploader"] {
-    background: linear-gradient(180deg, #ffffff, #f8fbff) !important;
-    border: 1px solid #bfdbfe !important;
-    border-radius: 20px !important;
-    padding: 12px !important;
-    margin-bottom: 10px !important;
+    background: transparent !important;
+    padding: 0 !important;
+    margin-bottom: 12px !important;
 }
 
 div[data-testid="stFileUploader"] section {
-    background: #f1f5f9 !important;
-    border: 1px dashed #93c5fd !important;
-    border-radius: 18px !important;
-    padding: 14px !important;
+    background: #ffffff !important;
+    border: 2px dashed #93c5fd !important;
+    border-radius: 20px !important;
+    padding: 18px !important;
+    min-height: 86px !important;
 }
 
 div[data-testid="stFileUploader"] button {
     border-radius: 14px !important;
+    min-height: 44px !important;
+    min-width: 112px !important;
+    padding: 0 18px !important;
     font-weight: 1000 !important;
+    white-space: nowrap !important;
+}
+
+div[data-testid="stFileUploader"] small {
+    display: none !important;
+}
+
+div[data-testid="stFileUploader"] [data-testid="stFileUploaderDropzoneInstructions"] {
+    padding-left: 12px !important;
+}
+
+textarea {
+    background: #f8fafc !important;
+    border: 1px solid #dbeafe !important;
+    border-radius: 16px !important;
 }
 
 div[data-testid="stExpander"] {
@@ -851,19 +890,32 @@ with tab_alert:
         if problem_select == "อื่นๆ (พิมพ์เพิ่มเติมได้)":
             custom_problem = st.text_input("✍️ ระบุปัญหา", placeholder="พิมพ์ปัญหาที่พบเพิ่มเติม")
 
+        problem_detail = st.text_area(
+            "📝 อาการของเสียเพิ่มเติม",
+            placeholder="พิมพ์เพิ่มได้ เช่น ตอกเบี้ยว / ลวดตอกหัก,งอ / จุดที่พบ / รายละเอียดอื่นๆ",
+            height=92,
+        )
+
         qty = st.number_input("🔢 จำนวนที่พบ / ใบ", min_value=1, step=1)
 
         severity = st.radio("🚦 ความรุนแรง", SEVERITY_LIST, horizontal=True)
 
-        upload_image = st.file_uploader(
-            "📁 อัปโหลดภาพจากเครื่อง/จุดงาน (ไม่บังคับ)",
-            type=["jpg", "jpeg", "png"],
-            help="เลือกไฟล์ JPG หรือ PNG ได้เลย ปุ่มนี้แสดงไว้ด้านบนเสมอ",
+        st.markdown(
+            """
+            <div class="upload-head">
+                <div class="upload-title">📁 อัปโหลดภาพประกอบ (ไม่บังคับ)</div>
+                <div class="upload-sub">กดเลือกไฟล์ หรือใช้มือถือถ่ายรูปจากปุ่มนี้ได้เลย</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
         )
 
-        image = None
-        with st.expander("📷 ถ่ายภาพจากกล้อง (ซ่อนไว้ กดเปิดเมื่อต้องการ)", expanded=False):
-            image = st.camera_input("📷 เปิดกล้องถ่ายภาพ")
+        upload_image = st.file_uploader(
+            label="",
+            type=["jpg", "jpeg", "png"],
+            accept_multiple_files=False,
+            label_visibility="collapsed",
+        )
 
         submitted = st.form_submit_button("🚨 ส่งแจ้งเตือน")
         st.markdown('</div>', unsafe_allow_html=True)
@@ -875,7 +927,15 @@ with tab_alert:
             st.error("กรุณาใส่ชื่อผู้แจ้ง")
             st.stop()
 
-        problem = custom_problem.strip() if problem_select == "อื่นๆ (พิมพ์เพิ่มเติมได้)" else problem_select
+        base_problem = custom_problem.strip() if problem_select == "อื่นๆ (พิมพ์เพิ่มเติมได้)" else problem_select
+        detail_problem = problem_detail.strip()
+
+        if base_problem and detail_problem:
+            problem = f"{base_problem} / {detail_problem}"
+        elif detail_problem:
+            problem = detail_problem
+        else:
+            problem = base_problem
 
         if not problem:
             st.error("กรุณาระบุปัญหาที่พบ")
@@ -884,7 +944,7 @@ with tab_alert:
         now = datetime.now()
         img_path = ""
 
-        final_image = image if image is not None else upload_image
+        final_image = upload_image
 
         if final_image is not None:
             safe_machine = machine.replace("/", "-")
