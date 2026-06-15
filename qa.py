@@ -830,7 +830,7 @@ st.markdown(
         <div class="logo">🚨</div>
         <div>
             <div class="title">QUALITY <span>ALERT</span></div>
-            <div class="subtitle">ทุกคนคือ QA • พบก่อน แจ้งก่อน ป้องกันของเสีย</div>
+            <div class="subtitle">พบก่อน แจ้งก่อน ป้องกันของเสีย</div>
         </div>
     </div>
 </div>
@@ -850,7 +850,7 @@ with tab_alert:
             <div class="form-icon">🚨</div>
             <div>
                 <div class="form-title">แจ้งปัญหาคุณภาพ</div>
-                <div class="form-sub">ทุกคนคือ QA • พบก่อน แจ้งก่อน ป้องกันของเสีย</div>
+                <div class="form-sub">ทุกคนคือ QA • พบก่อน แจ้งก่อน ลดของเสีย</div>
             </div>
         </div>
         """,
