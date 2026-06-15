@@ -849,7 +849,7 @@ with tab_alert:
         <div class="form-top">
             <div class="form-icon">🚨</div>
             <div>
-                <div class="form-title">🚨 แจ้งปัญหาคุณภาพ</div>
+                <div class="form-title">แจ้งปัญหาคุณภาพ</div>
                 <div class="form-sub">ทุกคนคือ QA • พบก่อน แจ้งก่อน ป้องกันของเสีย</div>
             </div>
         </div>
