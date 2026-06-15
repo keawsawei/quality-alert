@@ -9,7 +9,7 @@ from io import StringIO
 
 st.set_page_config(page_title="QUALITY ALERT", page_icon="🚨", layout="centered")
 
-APP_VERSION = "V17-FIX-READ-SHEET"
+APP_VERSION = "V18-FIX-THAI-UPLOAD-UI"
 
 SHEET_ID = "1cCKqj56MBas_v5c2dR1ryCNa9c4YulxtsKPbsz-7PUY"
 SHEET_GID = "0"
@@ -62,6 +62,23 @@ SEVERITY_LIST = ["ต่ำ", "กลาง", "สูง"]
 COST_PER_SHEET = 2.5
 
 
+def fix_thai_text(value):
+    """แก้ภาษาไทยเพี้ยนแบบ à¸ จาก CSV encoding ของ Google Sheet"""
+    if pd.isna(value):
+        return ""
+
+    text = str(value).replace("nan", "").replace("None", "").strip()
+
+    # ถ้าเป็น mojibake เช่น à¸à¸£ ให้ถอดกลับเป็น UTF-8
+    if "à¸" in text or "à¹" in text or "Â" in text:
+        try:
+            text = text.encode("latin1").decode("utf-8")
+        except Exception:
+            pass
+
+    return text.strip()
+
+
 def load_data():
     required_cols = [
         "วันที่",
@@ -81,18 +98,20 @@ def load_data():
     try:
         response = requests.get(GOOGLE_SHEET_CSV_URL, timeout=10)
         response.raise_for_status()
-        csv_text = response.text.strip()
+
+        # สำคัญ: บังคับ UTF-8 ไม่งั้นภาษาไทยจะกลายเป็น à¸...
+        csv_text = response.content.decode("utf-8-sig", errors="replace").strip()
 
         if not csv_text:
             df = pd.DataFrame(columns=required_cols)
         else:
-            df = pd.read_csv(StringIO(csv_text), dtype=str)
+            df = pd.read_csv(StringIO(csv_text), dtype=str, encoding="utf-8")
 
     except Exception:
         df = pd.DataFrame(columns=required_cols)
 
-    # ล้างชื่อหัวตาราง กันช่องว่าง / BOM / อักขระแปลกจาก Google Sheet
-    df.columns = [str(c).strip().replace("\ufeff", "") for c in df.columns]
+    # ล้างชื่อหัวตาราง กันช่องว่าง / BOM / อักขระแปลก
+    df.columns = [fix_thai_text(c).replace("\ufeff", "") for c in df.columns]
 
     # ถ้าหัวคอลัมน์อ่านเพี้ยน ให้อิงตามตำแหน่ง A-L ของชีตแทน
     must_have = {"วันที่", "เวลา", "ผู้แจ้ง", "เครื่อง/จุดงาน", "ปัญหาที่พบ", "คะแนน"}
@@ -107,7 +126,7 @@ def load_data():
 
     df = df[required_cols].copy()
 
-    # ล้างข้อมูลข้อความ
+    # ล้างข้อความ + ซ่อมภาษาไทยเพี้ยนทุกช่อง
     text_cols = [
         "วันที่",
         "เวลา",
@@ -120,13 +139,7 @@ def load_data():
         "สถานะ",
     ]
     for col in text_cols:
-        df[col] = (
-            df[col]
-            .astype(str)
-            .replace("nan", "")
-            .replace("None", "")
-            .str.strip()
-        )
+        df[col] = df[col].apply(fix_thai_text)
 
     df["เครื่อง/จุดงาน"] = df["เครื่อง/จุดงาน"].replace("", "ไม่ระบุ")
     df["ปัญหาที่พบ"] = df["ปัญหาที่พบ"].replace("", "ไม่ระบุ")
@@ -138,14 +151,17 @@ def load_data():
     df["มูลค่าป้องกัน"] = pd.to_numeric(df["มูลค่าป้องกัน"], errors="coerce").fillna(0)
 
     # แก้ข้อมูลเก่า ถ้าไม่มีคะแนนแต่มีข้อมูลจริง ให้คะแนนเริ่มต้น 1
-    old_score_mask = (df["คะแนน"] <= 0) & (df["ผู้แจ้ง"].astype(str).str.strip() != "")
-    df.loc[old_score_mask, "คะแนน"] = 1
+    has_real_data = (
+        df["ผู้แจ้ง"].astype(str).str.strip().ne("")
+        | df["เครื่อง/จุดงาน"].astype(str).str.strip().ne("ไม่ระบุ")
+        | df["ปัญหาที่พบ"].astype(str).str.strip().ne("ไม่ระบุ")
+    )
+    df.loc[(df["คะแนน"] <= 0) & has_real_data, "คะแนน"] = 1
 
-    # ถ้ามูลค่าไม่มี ให้คิดจากจำนวนใบ
-    mask_value = (df["มูลค่าป้องกัน"] <= 0) & (df["จำนวน"] > 0)
+    # ถ้ามูลค่าป้องกันว่าง ให้คิดจากจำนวนใบ
+    mask_value = df["มูลค่าป้องกัน"] <= 0
     df.loc[mask_value, "มูลค่าป้องกัน"] = df.loc[mask_value, "จำนวน"] * COST_PER_SHEET
 
-    # เติมขนาดเหตุการณ์ ถ้าว่าง
     missing_size = df["ขนาดเหตุการณ์"].astype(str).str.strip() == ""
     df.loc[missing_size, "ขนาดเหตุการณ์"] = df.loc[missing_size, "จำนวน"].apply(get_event_size)
 
@@ -317,9 +333,10 @@ st.markdown(
 
 .stApp {
     background:
-        radial-gradient(circle at top left, rgba(15, 31, 82, .13), transparent 30%),
-        radial-gradient(circle at top right, rgba(239, 35, 60, .12), transparent 32%),
-        linear-gradient(180deg, #f7faff 0%, #edf4ff 50%, #ffffff 100%);
+        radial-gradient(circle at top left, rgba(37, 99, 235, .18), transparent 34%),
+        radial-gradient(circle at top right, rgba(236, 72, 153, .13), transparent 34%),
+        radial-gradient(circle at bottom right, rgba(34, 197, 94, .10), transparent 30%),
+        linear-gradient(180deg, #f8fbff 0%, #eef5ff 48%, #fff7fb 100%);
 }
 
 #MainMenu, footer, header {
@@ -333,11 +350,12 @@ st.markdown(
 }
 
 .app-header {
-    background: rgba(255,255,255,.88);
-    border: 1px solid #e5e7eb;
-    border-radius: 28px;
-    padding: 18px;
-    box-shadow: 0 18px 46px rgba(15, 23, 42, .09);
+    background:
+        linear-gradient(135deg, rgba(255,255,255,.96), rgba(248,250,252,.90));
+    border: 1px solid rgba(226, 232, 240, .95);
+    border-radius: 32px;
+    padding: 20px;
+    box-shadow: 0 26px 70px rgba(15, 23, 42, .13);
     margin-bottom: 14px;
 }
 
@@ -350,8 +368,8 @@ st.markdown(
 .logo {
     width: 66px;
     height: 66px;
-    border-radius: 22px;
-    background: linear-gradient(145deg, #071f52, #123a7a);
+    border-radius: 24px;
+    background: linear-gradient(145deg, #082f7a, #2563eb 58%, #ef233c);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -398,16 +416,16 @@ div[data-testid="stTabs"] button {
 }
 
 .form-card {
-    background: #ffffff;
-    border: 1px solid #e5e7eb;
-    border-radius: 30px;
+    background: rgba(255,255,255,.96);
+    border: 1px solid rgba(226,232,240,.95);
+    border-radius: 32px;
     overflow: hidden;
-    box-shadow: 0 22px 55px rgba(15, 23, 42, .12);
+    box-shadow: 0 26px 70px rgba(15, 23, 42, .13);
     margin-top: 12px;
 }
 
 .form-top {
-    background: linear-gradient(135deg, #071f52, #123a7a);
+    background: linear-gradient(135deg, #082f7a, #2563eb 62%, #ef233c);
     color: white;
     padding: 18px;
     display: flex;
@@ -461,6 +479,29 @@ label {
     border: 1px solid #e5e7eb;
     border-radius: 16px;
     padding: 7px 10px;
+}
+
+
+
+/* แยกปุ่มอัปโหลดให้ไม่ทับกัน */
+div[data-testid="stFileUploader"] {
+    background: linear-gradient(180deg, #ffffff, #f8fbff) !important;
+    border: 1px solid #bfdbfe !important;
+    border-radius: 20px !important;
+    padding: 12px !important;
+    margin-bottom: 10px !important;
+}
+
+div[data-testid="stFileUploader"] section {
+    background: #f1f5f9 !important;
+    border: 1px dashed #93c5fd !important;
+    border-radius: 18px !important;
+    padding: 14px !important;
+}
+
+div[data-testid="stFileUploader"] button {
+    border-radius: 14px !important;
+    font-weight: 1000 !important;
 }
 
 div[data-testid="stExpander"] {
@@ -814,15 +855,15 @@ with tab_alert:
 
         severity = st.radio("🚦 ความรุนแรง", SEVERITY_LIST, horizontal=True)
 
-        image = None
-        upload_image = None
+        upload_image = st.file_uploader(
+            "📁 อัปโหลดภาพจากเครื่อง/จุดงาน (ไม่บังคับ)",
+            type=["jpg", "jpeg", "png"],
+            help="เลือกไฟล์ JPG หรือ PNG ได้เลย ปุ่มนี้แสดงไว้ด้านบนเสมอ",
+        )
 
-        with st.expander("📷 เพิ่มรูปภาพ (ไม่บังคับ)", expanded=False):
-            image = st.camera_input("📷 แตะเพื่อถ่ายภาพ")
-            upload_image = st.file_uploader(
-                "หรือเลือกภาพจากเครื่อง/จุดงาน",
-                type=["jpg", "jpeg", "png"],
-            )
+        image = None
+        with st.expander("📷 ถ่ายภาพจากกล้อง (ซ่อนไว้ กดเปิดเมื่อต้องการ)", expanded=False):
+            image = st.camera_input("📷 เปิดกล้องถ่ายภาพ")
 
         submitted = st.form_submit_button("🚨 ส่งแจ้งเตือน")
         st.markdown('</div>', unsafe_allow_html=True)
