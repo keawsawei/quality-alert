@@ -71,18 +71,18 @@ st.markdown("""
 
 .stApp{
     background:
-        radial-gradient(circle at 20% 0%, rgba(59,130,246,.10), transparent 26%),
-        linear-gradient(180deg,#F3F8FF 0%,#FFFFFF 45%,#F8FBFF 100%);
+        radial-gradient(circle at 12% 0%, rgba(37,99,235,.12), transparent 25%),
+        radial-gradient(circle at 90% 8%, rgba(14,165,233,.12), transparent 26%),
+        linear-gradient(180deg,#F2F7FF 0%,#FFFFFF 48%,#F8FBFF 100%);
 }
 
 .block-container{
     padding-top:0!important;
-    padding-left:1.6rem!important;
-    padding-right:1.6rem!important;
+    padding-left:1.2rem!important;
+    padding-right:1.2rem!important;
     max-width:1180px;
 }
 
-/* hide streamlit */
 #MainMenu{visibility:hidden;}
 footer{visibility:hidden;}
 header{visibility:hidden;}
@@ -91,11 +91,11 @@ header{visibility:hidden;}
 .hero{
     position:relative;
     overflow:hidden;
-    margin:0 -1.6rem 0 -1.6rem;
-    padding:34px 32px 46px 32px;
+    margin:0 -1.2rem 0 -1.2rem;
+    padding:30px 30px 42px 30px;
     background:
-        radial-gradient(circle at 12% 35%, rgba(56,189,248,.25), transparent 20%),
-        radial-gradient(circle at 82% 42%, rgba(14,165,233,.35), transparent 22%),
+        radial-gradient(circle at 12% 34%, rgba(56,189,248,.24), transparent 20%),
+        radial-gradient(circle at 82% 42%, rgba(14,165,233,.38), transparent 22%),
         linear-gradient(135deg,#061331 0%,#082A69 48%,#0057D9 100%);
     color:white;
     box-shadow:0 16px 42px rgba(0,60,180,.25);
@@ -105,11 +105,11 @@ header{visibility:hidden;}
     content:"";
     position:absolute;
     inset:0;
-    opacity:.38;
+    opacity:.25;
     background-image:
-        linear-gradient(90deg, transparent 0 72%, rgba(56,189,248,.50) 73%, transparent 74%),
-        linear-gradient(0deg, transparent 0 68%, rgba(56,189,248,.22) 69%, transparent 70%);
-    background-size:90px 44px;
+        linear-gradient(90deg, transparent 0 72%, rgba(56,189,248,.46) 73%, transparent 74%),
+        linear-gradient(0deg, transparent 0 68%, rgba(56,189,248,.20) 69%, transparent 70%);
+    background-size:88px 42px;
     transform:skewX(-18deg);
     transform-origin:right;
 }
@@ -117,9 +117,9 @@ header{visibility:hidden;}
 .hero:after{
     content:"";
     position:absolute;
-    right:20px;
-    top:34px;
-    width:440px;
+    right:16px;
+    top:28px;
+    width:420px;
     height:120px;
     background:
         linear-gradient(90deg,transparent,rgba(56,189,248,.70),transparent),
@@ -144,29 +144,29 @@ header{visibility:hidden;}
 }
 
 .ai-logo{
-    width:122px;
-    height:122px;
-    border-radius:50%;
+    width:112px;
+    height:112px;
+    border-radius:26px;
     display:flex;
     align-items:center;
     justify-content:center;
-    font-size:58px;
+    font-size:54px;
     font-weight:950;
     letter-spacing:-4px;
     color:white;
     background:
         radial-gradient(circle at 35% 25%, rgba(255,255,255,.38), transparent 20%),
-        linear-gradient(135deg,#062965,#071A3E);
+        linear-gradient(135deg,#073B8E,#071A3E);
     border:3px solid rgba(56,189,248,.9);
     box-shadow:
         0 0 0 8px rgba(56,189,248,.10),
-        0 0 32px rgba(56,189,248,.85),
+        0 0 30px rgba(56,189,248,.72),
         inset 0 0 24px rgba(56,189,248,.30);
 }
 
 .hero h1{
     margin:0;
-    font-size:56px;
+    font-size:52px;
     line-height:1;
     font-weight:950;
     letter-spacing:-1.4px;
@@ -174,8 +174,8 @@ header{visibility:hidden;}
 }
 
 .hero p{
-    margin:14px 0 0 0;
-    font-size:24px;
+    margin:12px 0 0 0;
+    font-size:22px;
     font-weight:800;
     color:#BAE6FD;
 }
@@ -194,7 +194,7 @@ header{visibility:hidden;}
 .nav-panel{
     position:relative;
     z-index:5;
-    margin:-28px auto 18px auto;
+    margin:-24px auto 18px auto;
     background:white;
     border:1px solid #E5EDF8;
     border-radius:18px;
@@ -202,21 +202,10 @@ header{visibility:hidden;}
     box-shadow:0 16px 32px rgba(15,23,42,.12);
 }
 
-.nav-grid{
-    display:grid;
-    grid-template-columns:repeat(5,1fr);
-    gap:8px;
-}
-
-.nav-item{
-    display:block;
-    text-decoration:none;
-}
-
 div[data-testid="stButton"] button{
     border-radius:14px;
-    font-weight:950;
-    min-height:58px;
+    font-weight:900;
+    min-height:50px;
     transition:.18s ease;
     border:1px solid #E2E8F0;
     background:white;
@@ -229,18 +218,34 @@ div[data-testid="stButton"] button:hover{
     box-shadow:0 12px 22px rgba(239,68,68,.16);
 }
 
-.nav-dash button{background:linear-gradient(135deg,#EAF3FF,#FFFFFF)!important;color:#0B56D9!important;border-color:#93C5FD!important;}
-.nav-ai button{background:linear-gradient(135deg,#ECFDF5,#FFFFFF)!important;color:#059669!important;border-color:#86EFAC!important;}
-.nav-history button{background:linear-gradient(135deg,#F5F3FF,#FFFFFF)!important;color:#6D28D9!important;border-color:#C4B5FD!important;}
-.nav-update button{background:linear-gradient(135deg,#FFF7ED,#FFFFFF)!important;color:#EA580C!important;border-color:#FDBA74!important;}
-.nav-master button{background:linear-gradient(135deg,#FEF2F2,#FFFFFF)!important;color:#DC2626!important;border-color:#FCA5A5!important;}
-
-.active-page{
-    border-bottom:5px solid #EF4444;
-    border-radius:14px;
+.nav-dash button,
+.nav-ai button,
+.nav-history button,
+.nav-update button,
+.nav-master button{
+    min-height:54px!important;
+    border-radius:14px!important;
+    font-size:14px!important;
+    font-weight:950!important;
 }
 
-/* ================= CARDS / TITLE ================= */
+.nav-dash button{background:linear-gradient(135deg,#EAF3FF,#FFFFFF)!important;color:#0B56D9!important;border:1px solid #93C5FD!important;}
+.nav-ai button{background:linear-gradient(135deg,#ECFDF5,#FFFFFF)!important;color:#059669!important;border:1px solid #86EFAC!important;}
+.nav-history button{background:linear-gradient(135deg,#F5F3FF,#FFFFFF)!important;color:#6D28D9!important;border:1px solid #C4B5FD!important;}
+.nav-update button{background:linear-gradient(135deg,#FFF7ED,#FFFFFF)!important;color:#EA580C!important;border:1px solid #FDBA74!important;}
+.nav-master button{background:linear-gradient(135deg,#FEF2F2,#FFFFFF)!important;color:#DC2626!important;border:1px solid #FCA5A5!important;}
+
+.active-page{
+    border-bottom:0!important;
+}
+
+.active-page button{
+    border:3px solid #EF4444!important;
+    box-shadow:0 8px 18px rgba(239,68,68,.18)!important;
+    transform:translateY(-1px);
+}
+
+/* ================= PANELS ================= */
 .panel{
     background:white;
     border:1px solid #E4ECF7;
@@ -257,26 +262,26 @@ div[data-testid="stButton"] button:hover{
     color:#071E52;
     font-size:25px;
     font-weight:950;
-    margin:0 0 14px 0;
+    margin:0 0 12px 0;
 }
 
 .num{
-    width:46px;
-    height:46px;
+    width:44px;
+    height:44px;
     border-radius:12px;
     display:flex;
     align-items:center;
     justify-content:center;
     color:white;
     font-weight:950;
-    font-size:24px;
+    font-size:23px;
     background:linear-gradient(135deg,#22C55E,#06B6D4);
     box-shadow:0 8px 16px rgba(6,182,212,.20);
 }
 
 .thin-line{
     height:1px;
-    background:linear-gradient(90deg,#20DFA2,transparent);
+    background:linear-gradient(90deg,#16C784,rgba(14,165,233,.35),transparent);
     margin:0 0 18px 0;
 }
 
@@ -300,7 +305,7 @@ div[data-testid="stButton"] button:hover{
 .info-card{
     border-radius:14px;
     padding:14px;
-    min-height:74px;
+    min-height:76px;
     border:1px solid #E2E8F0;
     font-weight:900;
 }
@@ -317,55 +322,42 @@ div[data-testid="stButton"] button:hover{
 .info-purple{background:linear-gradient(135deg,#F5F3FF,#FFFFFF);color:#7C3AED;border-color:#DDD6FE;}
 .info-pink{background:linear-gradient(135deg,#FFF1F2,#FFFFFF);color:#DB2777;border-color:#FBCFE8;}
 
-/* ================= DEFECT GRID ================= */
-.defect-grid{
-    display:grid;
-    grid-template-columns:repeat(5,1fr);
-    gap:18px;
+/* ================= DEFECT BUTTONS ================= */
+.defect-card button{
+    min-height:124px!important;
+    width:100%!important;
+    border-radius:16px!important;
+    padding:10px 6px!important;
+    font-size:17px!important;
+    line-height:1.2!important;
+    font-weight:950!important;
+    color:#0F172A!important;
+    border:1px solid #DDE8F6!important;
+    box-shadow:0 6px 16px rgba(15,23,42,.05)!important;
+    white-space:pre-line!important;
 }
 
-.defect-tile{
+.defect-card button:hover{
+    border:2px solid #EF4444!important;
+    transform:translateY(-2px)!important;
+    box-shadow:0 12px 24px rgba(239,68,68,.18)!important;
+}
+
+.defect-selected-wrap{
     position:relative;
-    border-radius:16px;
-    padding:22px 12px 18px 12px;
-    min-height:130px;
-    text-align:center;
-    border:1px solid #DDE8F6;
-    box-shadow:0 6px 16px rgba(15,23,42,.05);
 }
 
-.defect-icon{
-    font-size:40px;
-    line-height:1;
-    font-weight:950;
-    margin-bottom:12px;
-}
-
-.defect-name{
-    font-size:17px;
-    font-weight:950;
-    color:#0F172A;
-}
-
-.radio-dot{
-    width:24px;
-    height:24px;
-    border-radius:50%;
-    border:2px solid #CBD5E1;
-    background:white;
-    margin:12px auto 0 auto;
-}
-
-.defect-selected{
+.defect-selected-wrap button{
     border:3px solid #EF4444!important;
-    box-shadow:0 12px 26px rgba(239,68,68,.20);
+    box-shadow:0 12px 26px rgba(239,68,68,.20)!important;
+    transform:translateY(-2px)!important;
 }
 
-.defect-selected:after{
+.defect-selected-wrap:after{
     content:"✓";
     position:absolute;
-    top:-1px;
-    right:-1px;
+    top:0;
+    right:0;
     width:34px;
     height:34px;
     border-radius:0 14px 0 12px;
@@ -376,22 +368,32 @@ div[data-testid="stButton"] button:hover{
     justify-content:center;
     font-weight:950;
     font-size:22px;
+    z-index:10;
+    pointer-events:none;
 }
 
-.defect-selected .radio-dot{
-    border:6px solid #EF4444;
-}
+.d-blue button{background:linear-gradient(135deg,#EFF6FF,#FFFFFF)!important;border-color:#93C5FD!important;}
+.d-orange button{background:linear-gradient(135deg,#FFF7ED,#FFFFFF)!important;border-color:#FDBA74!important;}
+.d-teal button{background:linear-gradient(135deg,#ECFEFF,#FFFFFF)!important;border-color:#67E8F9!important;}
+.d-purple button{background:linear-gradient(135deg,#F5F3FF,#FFFFFF)!important;border-color:#C4B5FD!important;}
+.d-pink button{background:linear-gradient(135deg,#FFF1F2,#FFFFFF)!important;border-color:#F9A8D4!important;}
+.d-sky button{background:linear-gradient(135deg,#EFF6FF,#FFFFFF)!important;border-color:#93C5FD!important;}
+.d-green button{background:linear-gradient(135deg,#F0FDF4,#FFFFFF)!important;border-color:#86EFAC!important;}
+.d-amber button{background:linear-gradient(135deg,#FFFBEB,#FFFFFF)!important;border-color:#FCD34D!important;}
+.d-gray button{background:linear-gradient(135deg,#F8FAFC,#FFFFFF)!important;border-color:#CBD5E1!important;}
+.d-rose button{background:linear-gradient(135deg,#FDF2F8,#FFFFFF)!important;border-color:#F9A8D4!important;}
 
-.d-blue{background:linear-gradient(135deg,#EFF6FF,#FFFFFF);border-color:#93C5FD;}
-.d-orange{background:linear-gradient(135deg,#FFF7ED,#FFFFFF);border-color:#FDBA74;}
-.d-teal{background:linear-gradient(135deg,#ECFEFF,#FFFFFF);border-color:#67E8F9;}
-.d-purple{background:linear-gradient(135deg,#F5F3FF,#FFFFFF);border-color:#C4B5FD;}
-.d-pink{background:linear-gradient(135deg,#FFF1F2,#FFFFFF);border-color:#F9A8D4;}
-.d-sky{background:linear-gradient(135deg,#EFF6FF,#FFFFFF);border-color:#93C5FD;}
-.d-green{background:linear-gradient(135deg,#F0FDF4,#FFFFFF);border-color:#86EFAC;}
-.d-amber{background:linear-gradient(135deg,#FFFBEB,#FFFFFF);border-color:#FCD34D;}
-.d-gray{background:linear-gradient(135deg,#F8FAFC,#FFFFFF);border-color:#CBD5E1;}
-.d-rose{background:linear-gradient(135deg,#FDF2F8,#FFFFFF);border-color:#F9A8D4;}
+.selected-result{
+    margin-top:14px;
+    background:linear-gradient(135deg,#FFF1F2,#FFE4E6);
+    border:2px solid #EF4444;
+    color:#B91C1C;
+    border-radius:14px;
+    padding:12px 14px;
+    font-size:17px;
+    font-weight:950;
+    text-align:center;
+}
 
 /* ================= UPLOAD ================= */
 .upload-grid{
@@ -436,6 +438,7 @@ div[data-testid="stButton"] button:hover{
     justify-content:center;
     color:#94A3B8;
     font-weight:800;
+    text-align:center;
 }
 
 /* ================= RESULT ================= */
@@ -450,8 +453,7 @@ div[data-testid="stButton"] button:hover{
     width:142px;
     height:142px;
     border-radius:50%;
-    background:
-        conic-gradient(#22C55E 0 91%, #DCFCE7 91% 100%);
+    background:conic-gradient(#22C55E 0 91%, #DCFCE7 91% 100%);
     display:flex;
     align-items:center;
     justify-content:center;
@@ -482,6 +484,7 @@ div[data-testid="stButton"] button:hover{
 }
 
 .check{
+    min-width:54px;
     width:54px;
     height:54px;
     border-radius:50%;
@@ -517,6 +520,7 @@ div[data-testid="stButton"] button:hover{
     min-height:130px;
     color:#94A3B8;
     font-weight:800;
+    text-align:center;
 }
 
 .action-grid{
@@ -540,6 +544,14 @@ div[data-testid="stButton"] button:hover{
     font-size:19px!important;
 }
 
+.analyze-btn button{
+    background:linear-gradient(90deg,#16C784,#0094FF)!important;
+    color:white!important;
+    border:none!important;
+    font-size:20px!important;
+    min-height:58px!important;
+}
+
 /* ================= DASHBOARD ================= */
 .kpi-grid{
     display:grid;
@@ -555,8 +567,16 @@ div[data-testid="stButton"] button:hover{
     box-shadow:0 8px 20px rgba(15,23,42,.06);
 }
 
-.kpi small{display:block;color:#64748B;margin-bottom:8px;}
-.kpi strong{font-size:38px;color:#071E52;}
+.kpi small{
+    display:block;
+    color:#64748B;
+    margin-bottom:8px;
+}
+
+.kpi strong{
+    font-size:38px;
+    color:#071E52;
+}
 
 .kpi1{background:linear-gradient(135deg,#EAF3FF,#FFFFFF);border-color:#93C5FD;}
 .kpi2{background:linear-gradient(135deg,#ECFDF5,#FFFFFF);border-color:#86EFAC;}
@@ -566,63 +586,127 @@ div[data-testid="stButton"] button:hover{
 /* ================= RESPONSIVE ================= */
 @media (max-width:900px){
     .block-container{
-        padding-left:.9rem!important;
-        padding-right:.9rem!important;
+        padding-left:.55rem!important;
+        padding-right:.55rem!important;
     }
 
     .hero{
-        margin:0 -.9rem 0 -.9rem;
-        padding:26px 18px 42px 18px;
+        margin:0 -.55rem 0 -.55rem;
+        padding:22px 14px 36px 14px;
     }
 
     .ai-logo{
-        width:82px;
-        height:82px;
-        font-size:42px;
+        width:72px;
+        height:72px;
+        border-radius:18px;
+        font-size:36px;
+        letter-spacing:-3px;
     }
 
-    .hero h1{
-        font-size:34px;
-    }
-
-    .hero p{
-        font-size:17px;
-    }
-
-    .nav-grid{
-        grid-template-columns:repeat(5,1fr);
-        gap:5px;
-    }
-
-    div[data-testid="stButton"] button{
-        min-height:48px;
-        font-size:12px;
-        padding:4px!important;
-    }
-
-    .defect-grid{
-        grid-template-columns:repeat(2,1fr);
+    .logo-wrap{
         gap:12px;
     }
 
-    .defect-tile{
-        min-height:118px;
+    .hero h1{
+        font-size:28px;
+    }
+
+    .hero p{
+        font-size:14px;
+        margin-top:7px;
+    }
+
+    .hero-time{
+        font-size:11px;
+        right:12px;
+        top:8px;
+    }
+
+    .nav-panel{
+        margin:-20px auto 14px auto;
+        padding:7px;
+        border-radius:14px;
+    }
+
+    .nav-dash button,
+    .nav-ai button,
+    .nav-history button,
+    .nav-update button,
+    .nav-master button{
+        min-height:42px!important;
+        font-size:10px!important;
+        padding:3px!important;
+        border-radius:10px!important;
+    }
+
+    .panel{
+        padding:14px 12px 16px 12px;
+        border-radius:16px;
+    }
+
+    .section-title{
+        font-size:18px;
+        gap:9px;
+        margin-bottom:10px;
+    }
+
+    .num{
+        width:34px;
+        height:34px;
+        font-size:18px;
+        border-radius:10px;
     }
 
     .info-grid{
         grid-template-columns:repeat(2,1fr);
+        gap:10px;
     }
 
-    .upload-grid{
-        grid-template-columns:1fr;
+    .info-card{
+        min-height:66px;
+        padding:10px;
+        font-size:13px;
+    }
+
+    .defect-card button{
+        min-height:84px!important;
+        font-size:11px!important;
+        border-radius:11px!important;
+        padding:6px 2px!important;
+    }
+
+    .defect-selected-wrap:after{
+        width:24px;
+        height:24px;
+        font-size:16px;
+        border-radius:0 9px 0 8px;
+    }
+
+    .selected-result{
+        font-size:14px;
+        padding:9px;
+    }
+
+    .fake-upload,
+    .preview-box{
+        min-height:150px;
     }
 
     .result-grid{
         grid-template-columns:1fr;
     }
 
+    .result-status h3{
+        font-size:22px;
+    }
+
     .kpi-grid{
         grid-template-columns:repeat(2,1fr);
+        gap:10px;
+    }
+
+    .kpi strong{
+        font-size:30px;
     }
 
     .action-grid{
@@ -661,7 +745,7 @@ navs = [
     ("📊 Dashboard", "nav-dash", "Dashboard"),
     ("🔍 AI ตรวจงาน", "nav-ai", "AI ตรวจงาน"),
     ("🕘 ประวัติ", "nav-history", "ประวัติ"),
-    ("🟠 อัปเดตข้อมูล", "nav-update", "อัปเดตข้อมูล"),
+    ("🟠 อัปเดต", "nav-update", "อัปเดตข้อมูล"),
     ("⚙️ มาสเตอร์", "nav-master", "มาสเตอร์"),
 ]
 
@@ -743,26 +827,31 @@ elif st.session_state.page == "AI ตรวจงาน":
     <div class="panel">
         <div class="section-title"><div class="num">2</div>เลือกสิ่งที่ต้องการตรวจ</div>
         <div class="thin-line"></div>
-        <div class="defect-grid">
     """, unsafe_allow_html=True)
 
-    # HTML tiles + hidden streamlit buttons workaround
-    for idx, d in enumerate(DEFECTS):
-        selected = st.session_state.defect == d["name"]
-        st.markdown(f"""
-        <div class="defect-tile {d['class']} {'defect-selected' if selected else ''}">
-            <div class="defect-icon">{d['icon']}</div>
-            <div class="defect-name">{d['name']}</div>
-            <div class="radio-dot"></div>
-        </div>
-        """, unsafe_allow_html=True)
+    for row_start in range(0, len(DEFECTS), 5):
+        cols = st.columns(5, gap="small")
+        for col, idx in zip(cols, range(row_start, row_start + 5)):
+            d = DEFECTS[idx]
+            selected = st.session_state.defect == d["name"]
+            selected_css = "defect-selected-wrap" if selected else ""
+            label = f"{d['icon']}\n\n{d['name']}"
+            with col:
+                st.markdown(
+                    f'<div class="defect-card {d["class"]} {selected_css}">',
+                    unsafe_allow_html=True
+                )
+                if st.button(label, key=f"select_{idx}", use_container_width=True):
+                    st.session_state.defect = d["name"]
+                    st.session_state.result = False
+                    st.rerun()
+                st.markdown('</div>', unsafe_allow_html=True)
 
-        if st.button(f"เลือก {d['name']}", key=f"select_{idx}", use_container_width=True):
-            st.session_state.defect = d["name"]
-            st.session_state.result = False
-            st.rerun()
-
-    st.markdown("</div></div>", unsafe_allow_html=True)
+    st.markdown(
+        f'<div class="selected-result">✓ เลือกอยู่ : {st.session_state.defect}</div>',
+        unsafe_allow_html=True
+    )
+    st.markdown("</div>", unsafe_allow_html=True)
 
     # 3 UPLOAD
     st.markdown("""
@@ -798,11 +887,13 @@ elif st.session_state.page == "AI ตรวจงาน":
         <div class="thin-line"></div>
     """, unsafe_allow_html=True)
 
+    st.markdown('<div class="analyze-btn">', unsafe_allow_html=True)
     if st.button("🚀 ส่งตรวจด้วย AI", use_container_width=True, key="analyze_btn"):
         if uploaded:
             st.session_state.result = True
         else:
             st.warning("ถ่ายรูปก่อน")
+    st.markdown('</div>', unsafe_allow_html=True)
 
     if st.session_state.result and uploaded:
         now = datetime.now().strftime("%d/%m/%Y %H:%M")
