@@ -4,14 +4,11 @@ from datetime import datetime
 
 st.set_page_config(
     page_title="AI ผู้ช่วยคนคัด",
-    page_icon="AI",
+    page_icon="🤖",
     layout="centered",
     initial_sidebar_state="collapsed"
 )
 
-# =========================
-# DATA MOCK / โครงสร้างต่อฐานข้อมูล
-# =========================
 MASTER_PC = {
     "PC-1304": {
         "customer": "ลูกค้าตัวอย่าง A",
@@ -42,790 +39,290 @@ DEFECTS = [
     {"icon": "?", "name": "ไม่รู้ว่าปัญหาอะไร", "class": "d-rose"},
 ]
 
-# =========================
-# SESSION
-# =========================
 if "page" not in st.session_state:
     st.session_state.page = "AI ตรวจงาน"
-
 if "defect" not in st.session_state:
     st.session_state.defect = "สีเหลื่อม"
-
 if "result" not in st.session_state:
     st.session_state.result = False
-
 if "so" not in st.session_state:
     st.session_state.so = ""
-
 if "pc" not in st.session_state:
     st.session_state.pc = ""
-
 if "reporter" not in st.session_state:
     st.session_state.reporter = ""
 
-# =========================
-# CSS MOBILE FIRST
-# =========================
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700;800;900&display=swap');
 
-*{
-    font-family:'Noto Sans Thai',sans-serif;
-    box-sizing:border-box;
-}
-
-html, body, .stApp{
-    width:100%;
-    overflow-x:hidden!important;
-}
-
+*{font-family:'Noto Sans Thai',sans-serif!important;box-sizing:border-box;}
+html,body,.stApp{width:100%;overflow-x:hidden!important;}
 .stApp{
     background:
-        radial-gradient(circle at 15% 0%, rgba(37,99,235,.13), transparent 26%),
-        linear-gradient(180deg,#EEF6FF 0%,#FFFFFF 45%,#F8FBFF 100%);
+        radial-gradient(circle at top left,rgba(37,99,235,.16),transparent 34%),
+        radial-gradient(circle at top right,rgba(14,165,233,.14),transparent 34%),
+        radial-gradient(circle at bottom right,rgba(34,197,94,.10),transparent 30%),
+        linear-gradient(180deg,#f8fbff 0%,#eef5ff 48%,#ffffff 100%);
 }
+#MainMenu,footer,header{visibility:hidden;}
+.block-container{max-width:720px;padding-top:1rem;padding-bottom:2rem;}
 
-.block-container{
-    width:100%!important;
-    max-width:430px!important;
-    padding-top:0!important;
-    padding-left:8px!important;
-    padding-right:8px!important;
-    padding-bottom:20px!important;
-    margin:0 auto!important;
-}
-
-#MainMenu{visibility:hidden;}
-footer{visibility:hidden;}
-header{visibility:hidden;}
-
-[data-testid="column"]{
-    min-width:0!important;
-}
-
-/* ================= HEADER ================= */
-.hero{
-    position:relative;
-    overflow:hidden;
-    margin:0 -8px 0 -8px;
-    padding:18px 12px 30px 12px;
+.app-header{
+    position:relative;overflow:hidden;
     background:
-        radial-gradient(circle at 12% 34%, rgba(56,189,248,.30), transparent 22%),
-        radial-gradient(circle at 88% 48%, rgba(14,165,233,.32), transparent 25%),
-        linear-gradient(135deg,#061331 0%,#082A69 48%,#0057D9 100%);
-    color:white;
-    box-shadow:0 12px 28px rgba(0,60,180,.22);
+        radial-gradient(circle at 12% 18%,rgba(255,255,255,.26),transparent 18%),
+        radial-gradient(circle at 92% 8%,rgba(56,189,248,.32),transparent 23%),
+        linear-gradient(135deg,#071f52 0%,#1554d1 62%,#06b6d4 100%);
+    border:1px solid rgba(255,255,255,.38);border-radius:34px;padding:22px;
+    box-shadow:0 30px 80px rgba(15,23,42,.20);margin-bottom:14px;color:white;
 }
+.app-header:before{content:"";position:absolute;inset:-80px -120px auto auto;width:300px;height:300px;border-radius:999px;background:rgba(255,255,255,.13);}
+.app-header:after{content:"";position:absolute;left:22px;right:22px;bottom:0;height:3px;border-radius:999px 999px 0 0;background:linear-gradient(90deg,#38bdf8,#ffffff,#22c55e);opacity:.82;}
+.hero-top{position:relative;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;}
+.hero-tagline{color:rgba(255,255,255,.92);font-size:13px;font-weight:1000;letter-spacing:.2px;}
+.hero-badge{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.30);color:#fff;border-radius:999px;padding:7px 11px;font-size:11px;font-weight:1000;white-space:nowrap;box-shadow:inset 0 1px 0 rgba(255,255,255,.14);}
+.brand{position:relative;z-index:2;display:flex;align-items:center;gap:16px;}
+.logo{width:76px;height:76px;border-radius:26px;background:radial-gradient(circle at 28% 24%,rgba(255,255,255,.35),transparent 28%),linear-gradient(145deg,#0f2f77,#2563eb 54%,#06b6d4);display:flex;align-items:center;justify-content:center;color:white;font-size:38px;font-weight:1000;letter-spacing:-3px;box-shadow:0 18px 42px rgba(0,0,0,.24);border:1px solid rgba(255,255,255,.22);}
+.title{font-size:39px;line-height:.9;font-weight:1000;color:#fff;letter-spacing:-1.3px;text-shadow:0 4px 18px rgba(0,0,0,.20);}
+.subtitle{margin-top:8px;color:rgba(255,255,255,.94);font-size:15px;font-weight:1000;}
+.hero-pills{position:relative;z-index:2;display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;}
+.hero-pill{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.25);color:#fff;border-radius:999px;padding:8px 12px;font-size:12px;font-weight:1000;}
+.hero-action{position:relative;z-index:2;margin-top:14px;background:rgba(255,255,255,.92);color:#0f2f77;border-radius:18px;padding:12px 14px;font-size:14px;font-weight:1000;box-shadow:0 12px 28px rgba(0,0,0,.12);}
 
-.hero:before{
-    content:"";
-    position:absolute;
-    inset:0;
-    opacity:.18;
-    background-image:
-        linear-gradient(90deg, transparent 0 72%, rgba(56,189,248,.45) 73%, transparent 74%),
-        linear-gradient(0deg, transparent 0 68%, rgba(56,189,248,.18) 69%, transparent 70%);
-    background-size:58px 30px;
-    transform:skewX(-18deg);
-    transform-origin:right;
-}
+div[data-testid="stTabs"] [data-baseweb="tab-list"]{gap:8px;margin-top:10px;overflow-x:auto;}
+div[data-testid="stTabs"] [data-baseweb="tab"]{background:rgba(255,255,255,.90);border:1px solid #dbeafe;border-radius:999px;padding:8px 12px;box-shadow:0 7px 16px rgba(15,23,42,.05);}
+div[data-testid="stTabs"] button{font-size:14px;font-weight:1000;}
 
-/* ตัดแท่งขาว/แท่งแสงยาวออก */
-.hero:after{
-    display:none!important;
-}
+.form-card{background:rgba(255,255,255,.96);border:1px solid rgba(226,232,240,.95);border-radius:32px;overflow:hidden;box-shadow:0 26px 70px rgba(15,23,42,.13);margin-top:12px;}
+.form-top{background:linear-gradient(135deg,#082f7a,#2563eb 62%,#06b6d4);color:white;padding:18px;display:flex;align-items:center;gap:12px;}
+.form-icon{width:48px;height:48px;border-radius:16px;background:rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center;font-size:28px;}
+.form-title{font-size:23px;line-height:1.1;font-weight:1000;}
+.form-sub{font-size:13px;font-weight:800;opacity:.9;}
+.form-body{padding:16px;}
+.step-title{font-size:18px;font-weight:1000;color:#0f172a;margin:6px 0 10px 0;}
+.thin-line{height:1px;background:linear-gradient(90deg,#22c55e,#38bdf8,transparent);margin:5px 0 14px 0;}
 
-.hero-inner{
-    position:relative;
-    z-index:2;
-}
+label{font-weight:900!important;color:#111827!important;}
+.stTextInput input,.stNumberInput input,.stSelectbox div[data-baseweb="select"]>div,textarea{background:#f8fafc!important;border:1px solid #dbeafe!important;border-radius:16px!important;min-height:48px;font-weight:800!important;}
 
-.logo-wrap{
-    display:flex;
-    align-items:center;
-    gap:10px;
-}
+.defect-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0 10px 0;}
+.defect-tile{position:relative;border-radius:18px;padding:13px 7px;min-height:92px;text-align:center;border:2px solid transparent;box-shadow:0 10px 26px rgba(15,23,42,.08);font-weight:1000;}
+.defect-icon{font-size:28px;line-height:1;margin-bottom:9px;}
+.defect-name{color:#0f172a;font-size:14px;font-weight:1000;line-height:1.2;}
+.defect-selected{border-color:#ef233c!important;box-shadow:0 16px 32px rgba(239,35,60,.22);}
+.defect-selected:after{content:"✓";position:absolute;right:0;top:0;width:30px;height:30px;border-radius:0 16px 0 12px;background:#ef233c;color:white;font-size:18px;font-weight:1000;display:flex;align-items:center;justify-content:center;}
+.d-blue{background:radial-gradient(circle at 25% 20%,rgba(59,130,246,.24),transparent 26%),linear-gradient(135deg,#eff6ff,#fff);}
+.d-orange{background:radial-gradient(circle at 25% 20%,rgba(249,115,22,.28),transparent 26%),linear-gradient(135deg,#fff7ed,#fff);}
+.d-teal{background:radial-gradient(circle at 25% 20%,rgba(20,184,166,.28),transparent 26%),linear-gradient(135deg,#ecfeff,#fff);}
+.d-purple{background:radial-gradient(circle at 25% 20%,rgba(139,92,246,.26),transparent 26%),linear-gradient(135deg,#f5f3ff,#fff);}
+.d-pink{background:radial-gradient(circle at 25% 20%,rgba(236,72,153,.25),transparent 26%),linear-gradient(135deg,#fff1f2,#fff);}
+.d-sky{background:radial-gradient(circle at 25% 20%,rgba(14,165,233,.25),transparent 26%),linear-gradient(135deg,#eff6ff,#fff);}
+.d-green{background:radial-gradient(circle at 25% 20%,rgba(34,197,94,.25),transparent 26%),linear-gradient(135deg,#f0fdf4,#fff);}
+.d-amber{background:radial-gradient(circle at 25% 20%,rgba(245,158,11,.25),transparent 26%),linear-gradient(135deg,#fffbeb,#fff);}
+.d-gray{background:radial-gradient(circle at 25% 20%,rgba(100,116,139,.15),transparent 26%),linear-gradient(135deg,#f8fafc,#fff);}
+.d-rose{background:radial-gradient(circle at 25% 20%,rgba(244,63,94,.24),transparent 26%),linear-gradient(135deg,#fdf2f8,#fff);}
 
-.ai-logo{
-    width:62px;
-    height:62px;
-    min-width:62px;
-    border-radius:16px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    font-size:31px;
-    font-weight:950;
-    letter-spacing:-2px;
-    color:white;
-    background:
-        radial-gradient(circle at 35% 25%, rgba(255,255,255,.36), transparent 20%),
-        linear-gradient(135deg,#073B8E,#071A3E);
-    border:2px solid rgba(56,189,248,.9);
-    box-shadow:
-        0 0 0 5px rgba(56,189,248,.10),
-        0 0 22px rgba(56,189,248,.65),
-        inset 0 0 18px rgba(56,189,248,.25);
-}
+/* ซ่อน radio แต่ยังให้เลือกจากมือถือได้ ไม่ทำ layout เพี้ยน */
+.stRadio{margin-top:-4px;}
+.stRadio > label{display:none!important;}
+.stRadio > div{background:#f8fafc;border:1px solid #e5e7eb;border-radius:16px;padding:7px 10px;}
 
-.hero h1{
-    margin:0;
-    font-size:25px;
-    line-height:1;
-    font-weight:950;
-    letter-spacing:-.5px;
-    text-shadow:0 5px 16px rgba(0,0,0,.22);
-}
+.selected-result{margin-top:10px;background:linear-gradient(135deg,#fff1f2,#ffe4e6);border:2px solid #ef233c;color:#b91c1c;border-radius:16px;padding:10px;font-size:14px;font-weight:1000;text-align:center;}
 
-.hero p{
-    margin:7px 0 0 0;
-    font-size:13px;
-    font-weight:800;
-    color:#BAE6FD;
-}
+.upload-head{background:linear-gradient(135deg,#eff6ff,#fff);border:1px solid #bfdbfe;border-radius:20px;padding:14px 16px;margin:12px 0 8px 0;box-shadow:0 10px 26px rgba(37,99,235,.08);}
+.upload-title{color:#0f172a;font-size:16px;font-weight:1000;margin-bottom:3px;}
+.upload-sub{color:#64748b;font-size:12px;font-weight:800;}
+div[data-testid="stFileUploader"]{background:transparent!important;padding:0!important;margin-bottom:12px!important;}
+div[data-testid="stFileUploader"] section{background:#fff!important;border:2px dashed #93c5fd!important;border-radius:20px!important;padding:18px!important;min-height:86px!important;}
+div[data-testid="stFileUploader"] button{border-radius:14px!important;min-height:44px!important;min-width:112px!important;padding:0 18px!important;font-weight:1000!important;white-space:nowrap!important;}
+div[data-testid="stFileUploader"] small{display:none!important;}
 
-.hero-time{
-    position:absolute;
-    right:10px;
-    top:7px;
-    z-index:3;
-    font-size:10px;
-    font-weight:900;
-    color:#DFF6FF;
-}
+div[data-testid="stButton"] button{border-radius:18px!important;min-height:52px!important;font-weight:1000!important;}
+.analyze-btn button{background:linear-gradient(135deg,#16c784,#0094ff)!important;color:white!important;border:0!important;font-size:18px!important;box-shadow:0 16px 36px rgba(0,148,255,.25);}
+.save-btn button{background:linear-gradient(135deg,#22c55e,#16a34a)!important;color:white!important;border:0!important;}
+.send-btn button{background:linear-gradient(135deg,#2563eb,#1554d1)!important;color:white!important;border:0!important;}
 
-/* ================= NAV MOBILE ================= */
-.nav-panel{
-    position:relative;
-    z-index:5;
-    margin:-18px 0 12px 0;
-    background:white;
-    border:1px solid #E5EDF8;
-    border-radius:14px;
-    padding:6px;
-    box-shadow:0 12px 24px rgba(15,23,42,.11);
-}
+.result-card{background:white;border:1px solid #bbf7d0;border-radius:28px;padding:18px 15px;text-align:center;box-shadow:0 18px 42px rgba(22,163,74,.14);margin:14px 0;}
+.gauge{width:108px;height:108px;margin:0 auto 12px auto;border-radius:999px;background:conic-gradient(#22c55e 0 91%,#dcfce7 91% 100%);display:flex;align-items:center;justify-content:center;}
+.gauge-inner{width:82px;height:82px;border-radius:999px;background:white;display:flex;align-items:center;justify-content:center;flex-direction:column;color:#16a34a;font-weight:1000;}
+.gauge-num{font-size:25px;line-height:1;}.gauge-label{font-size:10px;}
+.result-title{font-size:24px;font-weight:1000;color:#16a34a;}.result-sub{color:#64748b;font-size:13px;font-weight:850;margin:4px 0 12px 0;}
+.result-box{background:#f8fafc;border:1px solid #e5e7eb;border-radius:16px;padding:11px;margin-bottom:8px;text-align:left;font-size:13px;font-weight:850;color:#334155;}
+.preview-box{min-height:115px;border:1px solid #e2e8f0;border-radius:18px;background:#f8fafc;color:#94a3b8;display:flex;align-items:center;justify-content:center;text-align:center;padding:13px;font-weight:900;}
 
-div[data-testid="stButton"] button{
-    border-radius:12px;
-    font-weight:900;
-    min-height:42px;
-    transition:.15s ease;
-    border:1px solid #E2E8F0;
-    background:white;
-    color:#0F172A;
-}
+.metric-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.metric-card{background:rgba(255,255,255,.94);border:1px solid #e5e7eb;border-left:7px solid var(--accent);border-radius:22px;padding:14px;display:flex;gap:11px;align-items:center;box-shadow:0 13px 31px rgba(15,23,42,.075);}
+.metric-icon{min-width:44px;width:44px;height:44px;border-radius:15px;background:var(--accent);color:white;display:flex;align-items:center;justify-content:center;font-size:23px;}
+.metric-label{color:#64748b;font-size:12px;font-weight:900;}.metric-value{color:#0f172a;font-size:22px;font-weight:1000;line-height:1.08;margin-top:4px;}
+.latest-card{background:rgba(255,255,255,.94);border:1px solid #e5e7eb;border-radius:22px;padding:12px;box-shadow:0 13px 31px rgba(15,23,42,.075);margin-bottom:10px;}
 
-div[data-testid="stButton"] button:hover{
-    transform:none;
-    border:2px solid #EF4444;
-    box-shadow:0 7px 15px rgba(239,68,68,.14);
+@media (max-width:640px){
+    .block-container{max-width:100%;padding-left:.7rem;padding-right:.7rem;}
+    .app-header{padding:18px;border-radius:28px;}
+    .logo{width:58px;height:58px;font-size:31px;border-radius:20px;}
+    .title{font-size:32px;}.subtitle{font-size:13px;}
+    .hero-tagline{font-size:11px;line-height:1.25;}.hero-badge{font-size:10px;padding:6px 9px;}.hero-action{font-size:13px;}
+    .metric-grid{grid-template-columns:1fr 1fr;}
+    .defect-grid{grid-template-columns:1fr 1fr;}
 }
-
-.nav-dash button,
-.nav-ai button,
-.nav-history button,
-.nav-update button,
-.nav-master button{
-    min-height:40px!important;
-    border-radius:10px!important;
-    font-size:9px!important;
-    font-weight:950!important;
-    padding:2px!important;
-}
-
-.nav-dash button{background:linear-gradient(135deg,#EAF3FF,#FFFFFF)!important;color:#0B56D9!important;border:1px solid #93C5FD!important;}
-.nav-ai button{background:linear-gradient(135deg,#ECFDF5,#FFFFFF)!important;color:#059669!important;border:1px solid #86EFAC!important;}
-.nav-history button{background:linear-gradient(135deg,#F5F3FF,#FFFFFF)!important;color:#6D28D9!important;border:1px solid #C4B5FD!important;}
-.nav-update button{background:linear-gradient(135deg,#FFF7ED,#FFFFFF)!important;color:#EA580C!important;border:1px solid #FDBA74!important;}
-.nav-master button{background:linear-gradient(135deg,#FEF2F2,#FFFFFF)!important;color:#DC2626!important;border:1px solid #FCA5A5!important;}
-
-.active-page button{
-    border:2px solid #EF4444!important;
-    box-shadow:0 6px 14px rgba(239,68,68,.18)!important;
-}
-
-/* ================= PANELS ================= */
-.panel{
-    background:white;
-    border:1px solid #E4ECF7;
-    border-radius:16px;
-    padding:13px 10px 15px 10px;
-    margin-bottom:10px;
-    box-shadow:0 7px 18px rgba(15,23,42,.07);
-}
-
-.section-title{
-    display:flex;
-    align-items:center;
-    gap:9px;
-    color:#071E52;
-    font-size:18px;
-    font-weight:950;
-    margin:0 0 10px 0;
-}
-
-.num{
-    width:34px;
-    height:34px;
-    border-radius:10px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    color:white;
-    font-weight:950;
-    font-size:18px;
-    background:linear-gradient(135deg,#22C55E,#06B6D4);
-    box-shadow:0 6px 13px rgba(6,182,212,.20);
-}
-
-.thin-line{
-    height:1px;
-    background:linear-gradient(90deg,#16C784,rgba(14,165,233,.35),transparent);
-    margin:0 0 14px 0;
-}
-
-/* ================= INPUT ================= */
-.stTextInput label,
-.stDateInput label,
-.stSelectbox label,
-.stTextArea label{
-    font-size:12px!important;
-    font-weight:800!important;
-}
-
-.stTextInput input,
-.stTextArea textarea,
-.stSelectbox div[data-baseweb="select"],
-.stDateInput input{
-    border-radius:11px!important;
-    border:1px solid #D8E4F2!important;
-    background:#FFFFFF!important;
-    font-weight:800!important;
-    min-height:42px!important;
-}
-
-/* ================= DEFECT BUTTONS ================= */
-.defect-card button{
-    min-height:82px!important;
-    width:100%!important;
-    border-radius:12px!important;
-    padding:5px 1px!important;
-    font-size:10px!important;
-    line-height:1.18!important;
-    font-weight:950!important;
-    color:#0F172A!important;
-    border:1px solid #DDE8F6!important;
-    box-shadow:0 6px 14px rgba(15,23,42,.06)!important;
-    white-space:pre-line!important;
-}
-
-.defect-card button:hover{
-    border:2px solid #EF4444!important;
-    transform:none!important;
-    box-shadow:0 9px 18px rgba(239,68,68,.15)!important;
-}
-
-.defect-selected-wrap{
-    position:relative;
-}
-
-.defect-selected-wrap button{
-    border:2px solid #EF4444!important;
-    box-shadow:0 10px 20px rgba(239,68,68,.18)!important;
-}
-
-.defect-selected-wrap:after{
-    content:"✓";
-    position:absolute;
-    top:0;
-    right:0;
-    width:23px;
-    height:23px;
-    border-radius:0 9px 0 8px;
-    background:#EF4444;
-    color:white;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    font-weight:950;
-    font-size:15px;
-    z-index:10;
-    pointer-events:none;
-}
-
-.d-blue button{
-    background:radial-gradient(circle at 25% 25%, rgba(59,130,246,.22), transparent 25%),linear-gradient(135deg,#EFF6FF,#FFFFFF)!important;
-    border-color:#60A5FA!important;
-}
-.d-orange button{
-    background:radial-gradient(circle at 25% 25%, rgba(249,115,22,.26), transparent 25%),linear-gradient(135deg,#FFF7ED,#FFFFFF)!important;
-    border-color:#FB923C!important;
-}
-.d-teal button{
-    background:radial-gradient(circle at 25% 25%, rgba(20,184,166,.26), transparent 25%),linear-gradient(135deg,#ECFEFF,#FFFFFF)!important;
-    border-color:#22D3EE!important;
-}
-.d-purple button{
-    background:radial-gradient(circle at 25% 25%, rgba(139,92,246,.24), transparent 25%),linear-gradient(135deg,#F5F3FF,#FFFFFF)!important;
-    border-color:#A78BFA!important;
-}
-.d-pink button{
-    background:radial-gradient(circle at 25% 25%, rgba(236,72,153,.24), transparent 25%),linear-gradient(135deg,#FFF1F2,#FFFFFF)!important;
-    border-color:#F472B6!important;
-}
-.d-sky button{
-    background:radial-gradient(circle at 25% 25%, rgba(14,165,233,.24), transparent 25%),linear-gradient(135deg,#EFF6FF,#FFFFFF)!important;
-    border-color:#38BDF8!important;
-}
-.d-green button{
-    background:radial-gradient(circle at 25% 25%, rgba(34,197,94,.24), transparent 25%),linear-gradient(135deg,#F0FDF4,#FFFFFF)!important;
-    border-color:#4ADE80!important;
-}
-.d-amber button{
-    background:radial-gradient(circle at 25% 25%, rgba(245,158,11,.24), transparent 25%),linear-gradient(135deg,#FFFBEB,#FFFFFF)!important;
-    border-color:#F59E0B!important;
-}
-.d-gray button{
-    background:radial-gradient(circle at 25% 25%, rgba(100,116,139,.16), transparent 25%),linear-gradient(135deg,#F8FAFC,#FFFFFF)!important;
-    border-color:#CBD5E1!important;
-}
-.d-rose button{
-    background:radial-gradient(circle at 25% 25%, rgba(244,63,94,.22), transparent 25%),linear-gradient(135deg,#FDF2F8,#FFFFFF)!important;
-    border-color:#FB7185!important;
-}
-
-.selected-result{
-    margin-top:10px;
-    background:linear-gradient(135deg,#FFF1F2,#FFE4E6);
-    border:2px solid #EF4444;
-    color:#B91C1C;
-    border-radius:12px;
-    padding:8px;
-    font-size:13px;
-    font-weight:950;
-    text-align:center;
-}
-
-/* ================= UPLOAD ================= */
-.fake-upload{
-    min-height:145px;
-    border:2px dashed #9DBBFF;
-    border-radius:14px;
-    background:linear-gradient(135deg,#F8FBFF,#FFFFFF);
-    display:flex;
-    flex-direction:column;
-    justify-content:center;
-    align-items:center;
-    color:#1D4ED8;
-    text-align:center;
-    font-weight:950;
-}
-
-.fake-upload .cam{
-    width:58px;
-    height:58px;
-    border-radius:50%;
-    background:linear-gradient(135deg,#DBEAFE,#EEF2FF);
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    font-size:30px;
-    margin-bottom:9px;
-}
-
-.preview-box{
-    min-height:145px;
-    border:1px solid #E2E8F0;
-    border-radius:14px;
-    background:#F8FAFC;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    color:#94A3B8;
-    font-weight:800;
-    text-align:center;
-    padding:12px;
-}
-
-/* ================= RESULT ================= */
-.gauge{
-    width:118px;
-    height:118px;
-    border-radius:50%;
-    background:conic-gradient(#22C55E 0 91%, #DCFCE7 91% 100%);
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    margin:8px auto 12px auto;
-}
-
-.gauge-inner{
-    width:88px;
-    height:88px;
-    border-radius:50%;
-    background:white;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    flex-direction:column;
-    color:#15803D;
-    font-weight:950;
-}
-
-.gauge-num{font-size:27px;line-height:1;}
-.gauge-label{font-size:11px;color:#166534;}
-
-.result-status{
-    display:flex;
-    align-items:flex-start;
-    gap:10px;
-    margin:10px 0;
-}
-
-.check{
-    min-width:42px;
-    width:42px;
-    height:42px;
-    border-radius:50%;
-    background:#DCFCE7;
-    color:#16A34A;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    font-size:25px;
-    font-weight:950;
-}
-
-.result-status h3{
-    color:#16A34A;
-    font-size:20px;
-    margin:0;
-    font-weight:950;
-}
-
-.result-status p{
-    margin:5px 0 0 0;
-    color:#64748B;
-    font-weight:800;
-    font-size:12px;
-}
-
-.ai-image-box{
-    border-radius:14px;
-    background:#F3F6FB;
-    border:1px solid #E2E8F0;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    min-height:115px;
-    color:#94A3B8;
-    font-weight:800;
-    text-align:center;
-}
-
-.save-btn button{
-    background:linear-gradient(90deg,#16C784,#22C55E)!important;
-    color:white!important;
-    border:none!important;
-    font-size:16px!important;
-}
-
-.send-btn button{
-    background:linear-gradient(90deg,#2563EB,#006CFF)!important;
-    color:white!important;
-    border:none!important;
-    font-size:16px!important;
-}
-
-.analyze-btn button{
-    background:linear-gradient(90deg,#16C784,#0094FF)!important;
-    color:white!important;
-    border:none!important;
-    font-size:17px!important;
-    min-height:52px!important;
-}
-
-/* ================= DASHBOARD ================= */
-.kpi{
-    border-radius:14px;
-    padding:13px;
-    border:1px solid #E2E8F0;
-    font-weight:950;
-    box-shadow:0 7px 17px rgba(15,23,42,.06);
-}
-
-.kpi small{
-    display:block;
-    color:#64748B;
-    margin-bottom:6px;
-    font-size:11px;
-}
-
-.kpi strong{
-    font-size:28px;
-    color:#071E52;
-}
-
-.kpi1{background:linear-gradient(135deg,#EAF3FF,#FFFFFF);border-color:#93C5FD;}
-.kpi2{background:linear-gradient(135deg,#ECFDF5,#FFFFFF);border-color:#86EFAC;}
-.kpi3{background:linear-gradient(135deg,#FEF2F2,#FFFFFF);border-color:#FCA5A5;}
-.kpi4{background:linear-gradient(135deg,#F5F3FF,#FFFFFF);border-color:#C4B5FD;}
 </style>
 """, unsafe_allow_html=True)
 
-# =========================
-# HEADER
-# =========================
-now_time = datetime.now().strftime("%H:%M น.")
-st.markdown(f"""
-<div class="hero">
-    <div class="hero-time">⏱ {now_time}</div>
-    <div class="hero-inner">
-        <div class="logo-wrap">
-            <div class="ai-logo">AI</div>
-            <div>
-                <h1>AI ผู้ช่วยคนคัด</h1>
-                <p>ถ่ายรูป · ส่งตรวจ · ดูผลเลย</p>
-            </div>
+st.markdown("""
+<div class="app-header">
+    <div class="hero-top">
+        <div class="hero-tagline">🤖 AI ตรวจงานหน่วยคัด</div>
+        <div class="hero-badge">MOBILE READY</div>
+    </div>
+    <div class="brand">
+        <div class="logo">AI</div>
+        <div>
+            <div class="title">AI <span>CHECK</span></div>
+            <div class="subtitle">ถ่ายรูป • เลือกอาการ • ดูผลทันที</div>
         </div>
     </div>
+    <div class="hero-pills">
+        <div class="hero-pill">📱 มือถือ</div>
+        <div class="hero-pill">⚡ เร็ว</div>
+        <div class="hero-pill">✅ ชัด</div>
+    </div>
+    <div class="hero-action">ใช้สำหรับช่วยคนคัดตรวจงานเบื้องต้น ก่อนส่งหัวหน้าตรวจซ้ำ</div>
 </div>
 """, unsafe_allow_html=True)
 
-# =========================
-# NAV
-# =========================
-st.markdown('<div class="nav-panel">', unsafe_allow_html=True)
-nav_cols = st.columns(5)
+tab_ai, tab_dashboard, tab_history, tab_update, tab_master = st.tabs(["🔍 AI ตรวจงาน", "📊 Dashboard", "🕘 ประวัติ", "🟠 อัปเดต", "⚙️ Master"])
 
-navs = [
-    ("📊", "nav-dash", "Dashboard"),
-    ("🔍 AI", "nav-ai", "AI ตรวจงาน"),
-    ("🕘", "nav-history", "ประวัติ"),
-    ("🟠", "nav-update", "อัปเดตข้อมูล"),
-    ("⚙️", "nav-master", "มาสเตอร์"),
-]
-
-for col, (label, css, page) in zip(nav_cols, navs):
-    with col:
-        st.markdown(f'<div class="{css} {"active-page" if st.session_state.page == page else ""}">', unsafe_allow_html=True)
-        if st.button(label, use_container_width=True, key=f"nav_{page}"):
-            st.session_state.page = page
-            st.session_state.result = False
-            st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
-
-st.markdown('</div>', unsafe_allow_html=True)
-
-# =========================
-# DASHBOARD
-# =========================
-if st.session_state.page == "Dashboard":
+with tab_ai:
+    st.markdown('<div class="form-card">', unsafe_allow_html=True)
     st.markdown("""
-    <div class="panel">
-        <div class="section-title"><div class="num">1</div>Dashboard วันนี้</div>
-        <div class="thin-line"></div>
-    """, unsafe_allow_html=True)
-
-    c1, c2 = st.columns(2)
-    with c1:
-        st.markdown('<div class="kpi kpi1"><small>งานตรวจวันนี้</small><strong>0</strong></div>', unsafe_allow_html=True)
-    with c2:
-        st.markdown('<div class="kpi kpi2"><small>ผ่าน</small><strong>0</strong></div>', unsafe_allow_html=True)
-    c3, c4 = st.columns(2)
-    with c3:
-        st.markdown('<div class="kpi kpi3"><small>พบปัญหา</small><strong>0</strong></div>', unsafe_allow_html=True)
-    with c4:
-        st.markdown('<div class="kpi kpi4"><small>รอหัวหน้า</small><strong>0</strong></div>', unsafe_allow_html=True)
-
-    st.markdown("</div>", unsafe_allow_html=True)
-
-    st.markdown("""
-    <div class="panel">
-        <div class="section-title"><div class="num">2</div>รายการล่าสุด</div>
-        <div class="thin-line"></div>
-        <div class="preview-box">ยังไม่มีข้อมูลวันนี้</div>
+    <div class="form-top">
+        <div class="form-icon">🔍</div>
+        <div>
+            <div class="form-title">AI ตรวจงาน</div>
+            <div class="form-sub">กรอกข้อมูลงาน เลือกอาการ แล้วถ่ายรูป</div>
+        </div>
     </div>
     """, unsafe_allow_html=True)
+    st.markdown('<div class="form-body">', unsafe_allow_html=True)
 
-# =========================
-# AI PAGE
-# =========================
-elif st.session_state.page == "AI ตรวจงาน":
-
-    # 1 DATA
-    st.markdown("""
-    <div class="panel">
-        <div class="section-title"><div class="num">1</div>ข้อมูลงาน</div>
-        <div class="thin-line"></div>
-    """, unsafe_allow_html=True)
-
+    st.markdown('<div class="step-title">1. ข้อมูลงาน</div><div class="thin-line"></div>', unsafe_allow_html=True)
     st.session_state.so = st.text_input("SO", value=st.session_state.so, placeholder="ค้นหา SO")
     st.session_state.pc = st.text_input("PC", value=st.session_state.pc, placeholder="ค้นหา PC")
     st.session_state.reporter = st.text_input("คนแจ้ง", value=st.session_state.reporter, placeholder="ชื่อคนแจ้ง")
 
-    st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown('<div class="step-title">2. เลือกอาการ</div><div class="thin-line"></div>', unsafe_allow_html=True)
 
-    # 2 DEFECT
+    names = [d["name"] for d in DEFECTS]
+    current_index = names.index(st.session_state.defect) if st.session_state.defect in names else 0
+    picked = st.radio("เลือกอาการ", names, index=current_index, horizontal=False, label_visibility="collapsed", key="defect_radio")
+    st.session_state.defect = picked
+
+    st.markdown('<div class="defect-grid">', unsafe_allow_html=True)
+    for d in DEFECTS:
+        selected = st.session_state.defect == d["name"]
+        st.markdown(f"""
+        <div class="defect-tile {d['class']} {'defect-selected' if selected else ''}">
+            <div class="defect-icon">{d['icon']}</div>
+            <div class="defect-name">{d['name']}</div>
+        </div>
+        """, unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    st.markdown(f'<div class="selected-result">✓ เลือกอยู่ : {st.session_state.defect}</div>', unsafe_allow_html=True)
+
+    st.markdown('<div class="step-title">3. ถ่ายรูปงาน</div><div class="thin-line"></div>', unsafe_allow_html=True)
     st.markdown("""
-    <div class="panel">
-        <div class="section-title"><div class="num">2</div>เลือกอาการ</div>
-        <div class="thin-line"></div>
-    """, unsafe_allow_html=True)
-
-    for row_start in range(0, len(DEFECTS), 2):
-        cols = st.columns(2, gap="small")
-        for col, idx in zip(cols, range(row_start, min(row_start + 2, len(DEFECTS)))):
-            d = DEFECTS[idx]
-            selected = st.session_state.defect == d["name"]
-            selected_css = "defect-selected-wrap" if selected else ""
-            label = f"{d['icon']}\n\n{d['name']}"
-            with col:
-                st.markdown(
-                    f'<div class="defect-card {d["class"]} {selected_css}">',
-                    unsafe_allow_html=True
-                )
-                if st.button(label, key=f"select_{idx}", use_container_width=True):
-                    st.session_state.defect = d["name"]
-                    st.session_state.result = False
-                    st.rerun()
-                st.markdown('</div>', unsafe_allow_html=True)
-
-    st.markdown(
-        f'<div class="selected-result">✓ เลือกอยู่ : {st.session_state.defect}</div>',
-        unsafe_allow_html=True
-    )
-    st.markdown("</div>", unsafe_allow_html=True)
-
-    # 3 UPLOAD
-    st.markdown("""
-    <div class="panel">
-        <div class="section-title"><div class="num">3</div>ถ่ายรูปงาน</div>
-        <div class="thin-line"></div>
-    """, unsafe_allow_html=True)
-
-    st.markdown("""
-    <div class="fake-upload">
-        <div class="cam">📷</div>
-        แตะเพื่อถ่ายรูป<br>
-        <span style="font-size:13px;color:#64748B;">หรือเลือกจากแกลเลอรี · JPG, PNG</span>
+    <div class="upload-head">
+        <div class="upload-title">📁 ถ่ายรูป / อัปโหลดรูป</div>
+        <div class="upload-sub">กดเลือกไฟล์ หรือใช้มือถือถ่ายรูปจากปุ่มนี้ได้เลย</div>
     </div>
     """, unsafe_allow_html=True)
 
-    uploaded = st.file_uploader("ถ่ายรูป / อัปโหลด", type=["jpg", "jpeg", "png"], label_visibility="collapsed")
+    uploaded = st.file_uploader(label="", type=["jpg", "jpeg", "png"], accept_multiple_files=False, label_visibility="collapsed")
 
+    img = None
     if uploaded:
         img = Image.open(uploaded)
         st.image(img, use_container_width=True)
     else:
-        img = None
         st.markdown('<div class="preview-box">จะแสดงรูปที่ถ่ายที่นี่</div>', unsafe_allow_html=True)
 
-    st.markdown("</div>", unsafe_allow_html=True)
-
-    # 4 RESULT
-    st.markdown("""
-    <div class="panel">
-        <div class="section-title"><div class="num">4</div>ผลการวิเคราะห์ (AI)</div>
-        <div class="thin-line"></div>
-    """, unsafe_allow_html=True)
+    st.markdown('<div class="step-title">4. ผลการวิเคราะห์</div><div class="thin-line"></div>', unsafe_allow_html=True)
 
     st.markdown('<div class="analyze-btn">', unsafe_allow_html=True)
-    if st.button("🚀 ส่งตรวจด้วย AI", use_container_width=True, key="analyze_btn"):
+    analyze = st.button("🚀 ส่งตรวจด้วย AI", use_container_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    if analyze:
         if uploaded:
             st.session_state.result = True
         else:
             st.warning("ถ่ายรูปก่อน")
-    st.markdown('</div>', unsafe_allow_html=True)
 
     if st.session_state.result and uploaded:
         now = datetime.now().strftime("%d/%m/%Y %H:%M")
-        st.markdown("""
-        <div class="gauge">
-            <div class="gauge-inner">
-                <div class="gauge-num">91%</div>
-                <div class="gauge-label">ความมั่นใจ</div>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-
         st.markdown(f"""
-        <div class="result-status">
-            <div class="check">✓</div>
-            <div>
-                <h3>ไม่พบความผิดปกติ</h3>
-                <p>คุณภาพงาน : ผ่านมาตรฐาน</p>
-                <p>SO : {st.session_state.so or "-"} / PC : {st.session_state.pc or "-"}</p>
-                <p>คนแจ้ง : {st.session_state.reporter or "-"}</p>
-                <p>ประเภทที่ตรวจ : {st.session_state.defect}</p>
-                <p>เวลา : {now}</p>
+        <div class="result-card">
+            <div class="gauge"><div class="gauge-inner"><div class="gauge-num">91%</div><div class="gauge-label">มั่นใจ</div></div></div>
+            <div class="result-title">ไม่พบความผิดปกติ</div>
+            <div class="result-sub">คุณภาพงาน : ผ่านมาตรฐาน</div>
+            <div class="result-box">
+                SO : {st.session_state.so or "-"}<br>
+                PC : {st.session_state.pc or "-"}<br>
+                คนแจ้ง : {st.session_state.reporter or "-"}<br>
+                ประเภทที่ตรวจ : {st.session_state.defect}<br>
+                เวลา : {now}
             </div>
         </div>
         """, unsafe_allow_html=True)
-
-        st.markdown('<div class="ai-image-box">ภาพผลการวิเคราะห์</div>', unsafe_allow_html=True)
-
         st.markdown('<div class="save-btn">', unsafe_allow_html=True)
         st.button("💾 บันทึกผลการตรวจ", use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
-
         st.markdown('<div class="send-btn">', unsafe_allow_html=True)
         st.button("👤 ส่งงานต่อ / เรียกหัวหน้าตรวจ", use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
     else:
         st.markdown('<div class="preview-box">รอส่งรูปเพื่อวิเคราะห์</div>', unsafe_allow_html=True)
 
-    st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown('</div></div>', unsafe_allow_html=True)
 
-# =========================
-# HISTORY
-# =========================
-elif st.session_state.page == "ประวัติ":
-    st.markdown("""
-    <div class="panel">
-        <div class="section-title"><div class="num">1</div>ข้อมูลย้อนหลัง</div>
-        <div class="thin-line"></div>
-    """, unsafe_allow_html=True)
+with tab_dashboard:
+    st.markdown('<div class="section-title">📊 Dashboard วันนี้</div>', unsafe_allow_html=True)
+    st.markdown('<div class="metric-grid">', unsafe_allow_html=True)
+    st.markdown('<div class="metric-card" style="--accent:#2563eb;"><div class="metric-icon">📷</div><div><div class="metric-label">งานตรวจวันนี้</div><div class="metric-value">0</div></div></div>', unsafe_allow_html=True)
+    st.markdown('<div class="metric-card" style="--accent:#22c55e;"><div class="metric-icon">✅</div><div><div class="metric-label">ผ่าน</div><div class="metric-value">0</div></div></div>', unsafe_allow_html=True)
+    st.markdown('<div class="metric-card" style="--accent:#ef233c;"><div class="metric-icon">🔴</div><div><div class="metric-label">พบปัญหา</div><div class="metric-value">0</div></div></div>', unsafe_allow_html=True)
+    st.markdown('<div class="metric-card" style="--accent:#f59e0b;"><div class="metric-icon">👤</div><div><div class="metric-label">รอหัวหน้า</div><div class="metric-value">0</div></div></div>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-title">📋 รายการล่าสุด</div>', unsafe_allow_html=True)
+    st.markdown('<div class="latest-card">ยังไม่มีข้อมูลวันนี้</div>', unsafe_allow_html=True)
 
+with tab_history:
+    st.markdown('<div class="form-card"><div class="form-body">', unsafe_allow_html=True)
+    st.markdown('<div class="step-title">ค้นหาข้อมูลย้อนหลัง</div><div class="thin-line"></div>', unsafe_allow_html=True)
     st.date_input("วันที่")
     st.text_input("ค้นหา SO / PC")
     st.selectbox("สถานะ", ["ทั้งหมด", "ผ่าน", "พบปัญหา", "รอหัวหน้า"])
-
     st.button("🔎 ค้นหา", use_container_width=True)
     st.button("📤 Export Excel", use_container_width=True)
     st.markdown('<div class="preview-box">ยังไม่มีข้อมูลย้อนหลัง</div>', unsafe_allow_html=True)
-    st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown('</div></div>', unsafe_allow_html=True)
 
-# =========================
-# UPDATE DATA
-# =========================
-elif st.session_state.page == "อัปเดตข้อมูล":
-    st.markdown("""
-    <div class="panel">
-        <div class="section-title"><div class="num">1</div>อัปเดตข้อมูล</div>
-        <div class="thin-line"></div>
-    """, unsafe_allow_html=True)
-
+with tab_update:
+    st.markdown('<div class="form-card"><div class="form-body">', unsafe_allow_html=True)
+    st.markdown('<div class="step-title">อัปเดตข้อมูล</div><div class="thin-line"></div>', unsafe_allow_html=True)
     st.text_input("SO")
     st.text_input("PC")
     st.text_input("ลูกค้า")
     st.text_area("ข้อกำหนด")
     st.text_area("Prompt AI")
     st.button("💾 บันทึกข้อมูล", use_container_width=True)
-    st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown('</div></div>', unsafe_allow_html=True)
 
-# =========================
-# MASTER
-# =========================
-elif st.session_state.page == "มาสเตอร์":
-    st.markdown("""
-    <div class="panel">
-        <div class="section-title"><div class="num">1</div>มาสเตอร์</div>
-        <div class="thin-line"></div>
-    """, unsafe_allow_html=True)
-
+with tab_master:
+    st.markdown('<div class="form-card"><div class="form-body">', unsafe_allow_html=True)
+    st.markdown('<div class="step-title">Master</div><div class="thin-line"></div>', unsafe_allow_html=True)
     st.info("เก็บ Master PC / ลูกค้า / Register / Print Mark / Barcode / Prompt AI")
     st.text_input("PC")
     st.text_input("ลูกค้า")
@@ -834,4 +331,4 @@ elif st.session_state.page == "มาสเตอร์":
     st.text_area("Barcode")
     st.text_area("Prompt AI")
     st.button("💾 บันทึก Master", use_container_width=True)
-    st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown('</div></div>', unsafe_allow_html=True)
