@@ -87,16 +87,22 @@ html, body, .stApp{
 }
 
 .block-container{
+    width:100%!important;
     max-width:430px!important;
     padding-top:0!important;
     padding-left:8px!important;
     padding-right:8px!important;
     padding-bottom:20px!important;
+    margin:0 auto!important;
 }
 
 #MainMenu{visibility:hidden;}
 footer{visibility:hidden;}
 header{visibility:hidden;}
+
+[data-testid="column"]{
+    min-width:0!important;
+}
 
 /* ================= HEADER ================= */
 .hero{
@@ -281,14 +287,18 @@ div[data-testid="stButton"] button:hover{
 }
 
 /* ================= INPUT ================= */
-.stTextInput label{
+.stTextInput label,
+.stDateInput label,
+.stSelectbox label,
+.stTextArea label{
     font-size:12px!important;
     font-weight:800!important;
 }
 
 .stTextInput input,
 .stTextArea textarea,
-.stSelectbox div[data-baseweb="select"]{
+.stSelectbox div[data-baseweb="select"],
+.stDateInput input{
     border-radius:11px!important;
     border:1px solid #D8E4F2!important;
     background:#FFFFFF!important;
