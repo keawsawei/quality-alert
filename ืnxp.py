@@ -1,5 +1,6 @@
 import streamlit as st
 from PIL import Image
+from datetime import datetime
 
 st.set_page_config(
     page_title="AI ผู้ช่วยคนคัด",
@@ -10,7 +11,7 @@ st.set_page_config(
 st.markdown("""
 <style>
 .stApp{
-    background:#F7FAFF;
+    background:linear-gradient(180deg,#F4F8FF,#FFFFFF);
 }
 
 .block-container{
@@ -19,24 +20,90 @@ st.markdown("""
 }
 
 .header{
-    background:linear-gradient(135deg,#051B4D,#006CFF);
+    position:relative;
+    overflow:hidden;
+    background:
+        radial-gradient(circle at 85% 25%, rgba(0,255,255,.35), transparent 22%),
+        radial-gradient(circle at 95% 85%, rgba(168,85,247,.45), transparent 28%),
+        linear-gradient(135deg,#061A4A,#005CFF);
     color:white;
-    border-radius:0 0 26px 26px;
-    padding:22px;
-    margin-bottom:24px;
-    box-shadow:0 12px 28px rgba(0,80,255,.28);
+    border-radius:0 0 28px 28px;
+    padding:24px 22px 26px 22px;
+    margin-bottom:22px;
+    box-shadow:0 14px 32px rgba(0,80,255,.28);
+}
+
+.header-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+}
+
+.header-left{
+    display:flex;
+    align-items:center;
+    gap:12px;
+}
+
+.ai-big{
+    width:62px;
+    height:62px;
+    border-radius:18px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:38px;
+    background:rgba(255,255,255,.16);
+    border:1px solid rgba(255,255,255,.25);
+    box-shadow:inset 0 0 18px rgba(255,255,255,.12);
+}
+
+.camera-big{
+    font-size:64px;
+    filter:drop-shadow(0 10px 16px rgba(0,0,0,.25));
 }
 
 .header h1{
-    font-size:30px;
+    font-size:28px;
+    line-height:1.1;
     margin:0;
     font-weight:900;
 }
 
 .header p{
     margin:6px 0 0 0;
+    font-size:15px;
+    opacity:.92;
+    font-weight:700;
+}
+
+.top-info{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+    margin-bottom:14px;
+}
+
+.info-box{
+    background:white;
+    border-radius:16px;
+    border:1px solid #DCE8FA;
+    padding:12px;
+    box-shadow:0 6px 16px rgba(15,23,42,.06);
+}
+
+.info-label{
+    font-size:12px;
+    color:#64748B;
+    font-weight:800;
+}
+
+.info-value{
+    margin-top:4px;
     font-size:16px;
-    opacity:.9;
+    color:#08245C;
+    font-weight:900;
 }
 
 .divider{
@@ -62,10 +129,10 @@ st.markdown("""
     display:flex;
     align-items:center;
     gap:12px;
-    font-size:22px;
+    font-size:21px;
     font-weight:900;
     color:#08245C;
-    margin-bottom:16px;
+    margin-bottom:14px;
 }
 
 .step-no{
@@ -80,27 +147,28 @@ st.markdown("""
     background:white;
     border-radius:20px;
     border:1px solid #E3ECFA;
-    padding:18px;
-    margin-bottom:18px;
+    padding:16px;
+    margin-bottom:16px;
     box-shadow:0 8px 22px rgba(20,60,120,.08);
 }
 
 .selected{
-    background:linear-gradient(135deg,#EAF3FF,#F3E8FF);
-    border:2px solid #3B82F6;
+    background:linear-gradient(135deg,#FFF1F2,#FFE4E6);
+    border:3px solid #EF4444;
     border-radius:16px;
-    padding:14px;
+    padding:13px;
     margin-top:12px;
     font-weight:900;
-    color:#0647A8;
+    color:#B91C1C;
     text-align:center;
+    box-shadow:0 8px 18px rgba(239,68,68,.18);
 }
 
 div[data-testid="stButton"] button{
-    min-height:66px;
+    min-height:64px;
     border-radius:16px;
     font-weight:900;
-    font-size:16px;
+    font-size:15px;
     border:1px solid #D8E7FF;
     box-shadow:0 5px 14px rgba(15,23,42,.06);
     transition:.2s;
@@ -108,8 +176,8 @@ div[data-testid="stButton"] button{
 
 div[data-testid="stButton"] button:hover{
     transform:translateY(-2px);
-    border:2px solid #2563EB;
-    box-shadow:0 10px 20px rgba(37,99,235,.18);
+    border:2px solid #EF4444;
+    box-shadow:0 10px 20px rgba(239,68,68,.18);
 }
 
 .ai-btn button{
@@ -126,23 +194,15 @@ div[data-testid="stButton"] button:hover{
     border-radius:20px;
     background:linear-gradient(135deg,#FAF7FF,#F1F7FF);
     padding:18px;
+    text-align:center;
+    color:#5B21B6;
+    font-weight:900;
 }
 
 .result-bad{
     background:#FEF2F2;
     border:1px solid #FCA5A5;
     color:#991B1B;
-    padding:16px;
-    border-radius:16px;
-    text-align:center;
-    font-weight:900;
-    font-size:18px;
-}
-
-.result-ok{
-    background:#ECFDF5;
-    border:1px solid #86EFAC;
-    color:#166534;
     padding:16px;
     border-radius:16px;
     text-align:center;
@@ -157,6 +217,12 @@ div[data-testid="stButton"] button:hover{
     padding:14px;
     border-radius:14px;
     font-weight:800;
+}
+
+.small-muted{
+    font-size:12px;
+    color:#64748B;
+    font-weight:700;
 }
 
 img{
@@ -175,132 +241,244 @@ if "defect" not in st.session_state:
 if "result" not in st.session_state:
     st.session_state.result = False
 
-st.markdown("""
-<div class="header">
-    <h1>🤖 AI ผู้ช่วยคนคัด</h1>
-    <p>ถ่ายรูป · ส่งตรวจ · ดูผลเลย</p>
-</div>
-""", unsafe_allow_html=True)
+if "so" not in st.session_state:
+    st.session_state.so = ""
 
-st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
+if "pc" not in st.session_state:
+    st.session_state.pc = ""
 
-st.markdown("""
-<div class="step-title">
-    <span class="step-no">1.</span>
-    <span>เลือกสิ่งที่ต้องการตรวจ</span>
-</div>
-""", unsafe_allow_html=True)
+if "reporter" not in st.session_state:
+    st.session_state.reporter = ""
 
-items = [
-    ("💦", "สีเหลื่อม"),
-    ("🟠", "หมึกเลอะ"),
-    ("🔵", "พิมพ์ตัน"),
-    ("▤", "พิมพ์จาง"),
-    ("🟣", "Pin Hole"),
-    ("╱╱", "รอยขีด"),
-    ("▥", "Barcode"),
-    ("⊕", "Print Mark"),
-    ("•••", "อื่น ๆ"),
-    ("❔", "ไม่รู้ว่าปัญหาอะไร"),
-]
+# โครงสร้างฐานข้อมูลตัวอย่าง
+# ต่อไปเอาตรงนี้ไปต่อกับ Excel / CSV / Database ได้
+MASTER_PC = {
+    "PC-1304": {
+        "customer": "ลูกค้าตัวอย่าง A",
+        "spec": "ตรวจสีเหลื่อม / Print Mark เข้มงวด",
+        "standard": "ก่อน Register และแรกกดต้องตรวจซ้ำ"
+    },
+    "PC-2201": {
+        "customer": "ลูกค้าตัวอย่าง B",
+        "spec": "เน้น Barcode / พิมพ์จาง",
+        "standard": "ห้าม Barcode ขาด"
+    }
+}
 
-for i in range(0, len(items), 2):
-    c1, c2 = st.columns(2, gap="small")
+tab_ai, tab_dash, tab_db, tab_history = st.tabs([
+    "🤖 ตรวจ AI",
+    "📊 Dashboard",
+    "🗂️ อัปเดตฐานข้อมูล",
+    "🕘 ข้อมูลย้อนหลัง"
+])
 
-    for col, item in zip([c1, c2], items[i:i+2]):
-        icon, name = item
-        with col:
-            if st.button(f"{icon}  {name}", use_container_width=True, key=f"defect_{name}"):
-                st.session_state.defect = name
-                st.session_state.result = False
+with tab_ai:
 
-st.markdown(
-    f'<div class="selected">เลือกอยู่ : {st.session_state.defect}</div>',
-    unsafe_allow_html=True
-)
-
-st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
-
-st.markdown("""
-<div class="step-title">
-    <span class="step-no" style="background:linear-gradient(135deg,#8B5CF6,#6D28D9);">2.</span>
-    <span>ถ่ายรูปงาน</span>
-</div>
-""", unsafe_allow_html=True)
-
-st.markdown('<div class="card">', unsafe_allow_html=True)
-
-uploaded = st.file_uploader(
-    "ถ่ายรูป / อัปโหลดรูป",
-    type=["jpg", "jpeg", "png"],
-    label_visibility="collapsed"
-)
-
-img = None
-if uploaded:
-    img = Image.open(uploaded)
-    st.image(img, use_container_width=True)
-else:
     st.markdown("""
-    <div class="upload-box">
-        📷 <b>ถ่ายรูป / อัปโหลดรูป</b><br>
-        รองรับ JPG, PNG
+    <div class="header">
+        <div class="header-row">
+            <div class="header-left">
+                <div class="ai-big">🤖</div>
+                <div>
+                    <h1>AI ผู้ช่วยคนคัด</h1>
+                    <p>ถ่ายรูป · ส่งตรวจ · ดูผลเลย</p>
+                </div>
+            </div>
+            <div class="camera-big">📸</div>
+        </div>
     </div>
     """, unsafe_allow_html=True)
 
-st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+    st.markdown("### ข้อมูลงาน")
 
-st.markdown("""
-<div class="step-title">
-    <span class="step-no" style="background:linear-gradient(135deg,#22C55E,#06B6D4);">3.</span>
-    <span>ส่งตรวจด้วย AI</span>
-</div>
-""", unsafe_allow_html=True)
+    c1, c2 = st.columns(2)
+    with c1:
+        st.session_state.so = st.text_input("SO", value=st.session_state.so, placeholder="เช่น SO123456")
+    with c2:
+        st.session_state.pc = st.text_input("PC", value=st.session_state.pc, placeholder="เช่น PC-1304")
 
-st.markdown('<div class="ai-btn">', unsafe_allow_html=True)
-analyze = st.button("🚀 ส่งตรวจด้วย AI", use_container_width=True)
-st.markdown('</div>', unsafe_allow_html=True)
+    st.session_state.reporter = st.text_input(
+        "คนแจ้ง",
+        value=st.session_state.reporter,
+        placeholder="ชื่อคนแจ้ง / คนคัด"
+    )
 
-if analyze:
-    if uploaded:
-        st.session_state.result = True
+    pc_data = MASTER_PC.get(st.session_state.pc.strip())
+
+    if pc_data:
+        st.markdown(f"""
+        <div class="top-info">
+            <div class="info-box">
+                <div class="info-label">ลูกค้า</div>
+                <div class="info-value">{pc_data["customer"]}</div>
+            </div>
+            <div class="info-box">
+                <div class="info-label">ข้อกำหนด PC</div>
+                <div class="info-value">{pc_data["spec"]}</div>
+            </div>
+        </div>
+        <div class="note">
+            มาตรฐาน : {pc_data["standard"]}
+        </div>
+        """, unsafe_allow_html=True)
     else:
-        st.warning("ถ่ายรูปก่อนหัวหน้า")
+        st.info("กรอก PC แล้วระบบจะดึงข้อกำหนดขึ้นอัตโนมัติ")
 
-st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
-st.markdown("""
-<div class="step-title">
-    <span class="step-no" style="background:linear-gradient(135deg,#F97316,#DC2626);">4.</span>
-    <span>ผลการวิเคราะห์</span>
-</div>
-""", unsafe_allow_html=True)
+    st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
 
-st.markdown('<div class="card">', unsafe_allow_html=True)
-
-if st.session_state.result and uploaded:
     st.markdown("""
-    <div class="result-bad">
-        🔴 พบความผิดปกติ<br>
-        ความมั่นใจ 88%
+    <div class="step-title">
+        <span class="step-no">1.</span>
+        <span>เลือกสิ่งที่ต้องการตรวจ</span>
     </div>
     """, unsafe_allow_html=True)
 
-    st.markdown("#### ตำแหน่งที่พบ")
-    st.image(img, use_container_width=True)
+    items = [
+        ("💦", "สีเหลื่อม"),
+        ("🟠", "หมึกเลอะ"),
+        ("🔵", "พิมพ์ตัน"),
+        ("▤", "พิมพ์จาง"),
+        ("🟣", "Pin Hole"),
+        ("╱╱", "รอยขีด"),
+        ("▥", "Barcode"),
+        ("⊕", "Print Mark"),
+        ("•••", "อื่น ๆ"),
+        ("❔", "ไม่รู้ว่าปัญหาอะไร"),
+    ]
 
-    st.markdown(f"""
-    <div class="note">
-        รายละเอียด<br>
-        • ประเภทที่ตรวจ : {st.session_state.defect}<br>
-        • สถานะ : พบจุดต้องสงสัย<br>
-        • แนะนำ : เรียกหัวหน้าตรวจซ้ำ
+    for i in range(0, len(items), 2):
+        c1, c2 = st.columns(2, gap="small")
+        for col, item in zip([c1, c2], items[i:i+2]):
+            icon, name = item
+            with col:
+                if st.button(f"{icon}  {name}", use_container_width=True, key=f"defect_{name}"):
+                    st.session_state.defect = name
+                    st.session_state.result = False
+
+    st.markdown(
+        f'<div class="selected">เลือกอยู่ : {st.session_state.defect}</div>',
+        unsafe_allow_html=True
+    )
+
+    st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
+
+    st.markdown("""
+    <div class="step-title">
+        <span class="step-no" style="background:linear-gradient(135deg,#8B5CF6,#6D28D9);">2.</span>
+        <span>ถ่ายรูปงาน</span>
     </div>
     """, unsafe_allow_html=True)
 
-    st.button("👨‍💼 เรียกหัวหน้าตรวจ", use_container_width=True)
+    st.markdown('<div class="card">', unsafe_allow_html=True)
 
-else:
-    st.info("รอส่งรูปเพื่อวิเคราะห์")
+    uploaded = st.file_uploader(
+        "ถ่ายรูป / อัปโหลดรูป",
+        type=["jpg", "jpeg", "png"],
+        label_visibility="collapsed"
+    )
 
-st.markdown('</div>', unsafe_allow_html=True)
+    img = None
+    if uploaded:
+        img = Image.open(uploaded)
+        st.image(img, use_container_width=True)
+    else:
+        st.markdown("""
+        <div class="upload-box">
+            📷<br>
+            ถ่ายรูป / อัปโหลดรูป<br>
+            <span class="small-muted">รองรับ JPG, PNG</span>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    st.markdown("""
+    <div class="step-title">
+        <span class="step-no" style="background:linear-gradient(135deg,#22C55E,#06B6D4);">3.</span>
+        <span>ส่งตรวจด้วย AI</span>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown('<div class="ai-btn">', unsafe_allow_html=True)
+    analyze = st.button("🚀 ส่งตรวจด้วย AI", use_container_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    if analyze:
+        if uploaded:
+            st.session_state.result = True
+        else:
+            st.warning("ถ่ายรูปก่อนหัวหน้า")
+
+    st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
+
+    st.markdown("""
+    <div class="step-title">
+        <span class="step-no" style="background:linear-gradient(135deg,#F97316,#DC2626);">4.</span>
+        <span>ผลการวิเคราะห์</span>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+
+    if st.session_state.result and uploaded:
+        now = datetime.now().strftime("%d/%m/%Y %H:%M")
+
+        st.markdown("""
+        <div class="result-bad">
+            🔴 พบความผิดปกติ<br>
+            ความมั่นใจ 88%
+        </div>
+        """, unsafe_allow_html=True)
+
+        st.markdown("#### ตำแหน่งที่พบ")
+        st.image(img, use_container_width=True)
+
+        st.markdown(f"""
+        <div class="note">
+            รายละเอียด<br>
+            • เวลา : {now}<br>
+            • SO : {st.session_state.so or "-"}<br>
+            • PC : {st.session_state.pc or "-"}<br>
+            • คนแจ้ง : {st.session_state.reporter or "-"}<br>
+            • ประเภทที่ตรวจ : {st.session_state.defect}<br>
+            • สถานะ : พบจุดต้องสงสัย<br>
+            • แนะนำ : เรียกหัวหน้าตรวจซ้ำ
+        </div>
+        """, unsafe_allow_html=True)
+
+        st.button("👨‍💼 เรียกหัวหน้าตรวจ", use_container_width=True)
+
+    else:
+        st.info("รอส่งรูปเพื่อวิเคราะห์")
+
+    st.markdown('</div>', unsafe_allow_html=True)
+
+with tab_dash:
+    st.markdown("## 📊 Dashboard")
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+    st.metric("งานตรวจวันนี้", "0")
+    st.metric("พบปัญหา", "0")
+    st.metric("รอหัวหน้าตรวจ", "0")
+    st.markdown('</div>', unsafe_allow_html=True)
+
+with tab_db:
+    st.markdown("## 🗂️ อัปเดตฐานข้อมูล")
+    st.info("หน้านี้ไว้เพิ่ม Master SO / PC / ลูกค้า / ข้อกำหนดงาน")
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+    st.text_input("เพิ่ม PC")
+    st.text_input("ชื่อลูกค้า")
+    st.text_area("ข้อกำหนดของ PC")
+    st.button("💾 บันทึกฐานข้อมูล", use_container_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
+with tab_history:
+    st.markdown("## 🕘 ข้อมูลย้อนหลัง")
+    st.info("หน้านี้ไว้ค้นประวัติการตรวจย้อนหลัง")
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+    st.date_input("เลือกวันที่")
+    st.text_input("ค้นหา SO / PC / คนแจ้ง")
+    st.button("🔎 ค้นหา", use_container_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
